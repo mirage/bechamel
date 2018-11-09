@@ -47,12 +47,12 @@ module Monotonic_clock = struct
 
   let load _witness = ()
   let unload _witness = ()
-  let make () = Clock.monotonic
+  let make () = Linux_clock.monotonic
   let float x = Int64.to_float !x
-  let label x = Clock.kind_to_string (Clock.int_to_kind x)
+  let label x = Linux_clock.kind_to_string (Linux_clock.int_to_kind x)
   let diff a b = {contents= Int64.sub !b !a}
   let epsilon () = {contents= 0L}
-  let blit witness v = v := Clock.(clock_linux_get_time witness)
+  let blit witness v = v := Linux_clock.(clock_linux_get_time witness)
 end
 
 module Realtime_clock = struct
@@ -62,20 +62,41 @@ module Realtime_clock = struct
 
   let load _witness = ()
   let unload _witness = ()
-  let make () = Clock.realtime
+  let make () = Linux_clock.realtime
   let float x = Int64.to_float !x
-  let label x = Clock.kind_to_string (Clock.int_to_kind x)
+  let label x = Linux_clock.kind_to_string (Linux_clock.int_to_kind x)
   let diff a b = {contents= Int64.sub !b !a}
   let epsilon () = {contents= 0L}
-  let blit witness v = v := Clock.(clock_linux_get_time witness)
+  let blit witness v = v := Linux_clock.(clock_linux_get_time witness)
+end
+
+module Cpu_clock = struct
+  type witness = Perf.t
+  type value = int64 ref
+  type label = string
+
+  let load witness = Perf.enable witness
+  let unload witness = Perf.disable witness
+  let make () = Perf.make Perf.Attr.(make Kind.Cpu_clock)
+  let float x = Int64.to_float !x
+
+  let label x =
+    let kind = Perf.kind x in
+    Perf.Attr.Kind.to_string kind
+
+  let diff a b = {contents= Int64.sub !b !a}
+  let epsilon () = {contents= 0L}
+  let blit witness v = v := Perf.read witness
 end
 
 let ext_minor_words = Measure.make (module Minor_allocated)
 let ext_major_words = Measure.make (module Major_allocated)
+let ext_cpu_clock = Measure.make (module Cpu_clock)
 let ext_monotonic_clock = Measure.make (module Monotonic_clock)
 let ext_realtime_clock = Measure.make (module Realtime_clock)
 let ins_minor_words = Measure.instance (module Minor_allocated) ext_minor_words
 let ins_major_words = Measure.instance (module Major_allocated) ext_major_words
+let ins_cpu_clock = Measure.instance (module Cpu_clock) ext_cpu_clock
 
 let ins_monotonic_clock =
   Measure.instance (module Monotonic_clock) ext_monotonic_clock
@@ -103,10 +124,12 @@ let analyze responders measures =
 let () =
   let results =
     Benchmark.all
-      [ins_minor_words; ins_major_words; ins_monotonic_clock; ins_real_clock]
+      [ ins_minor_words; ins_major_words; ins_cpu_clock; ins_monotonic_clock
+      ; ins_real_clock ]
       test
     |> analyze
-         [ins_minor_words; ins_major_words; ins_monotonic_clock; ins_real_clock]
+         [ ins_minor_words; ins_major_words; ins_cpu_clock; ins_monotonic_clock
+         ; ins_real_clock ]
   in
   Fmt.pr "%a.\n%!"
     Fmt.(Dump.list (Dump.list Analyze.(pp ~colors:Map.empty)))

@@ -1,10 +1,10 @@
 (library
- (name clock)
- (modules clock)
- (c_names clock_stubs)
+ (name linux_clock)
+ (modules linux_clock)
+ (c_names linux_clock_stubs)
  (libraries fmt))
 
 (executable
  (name main)
  (modules main)
- (libraries clock fmt.tty ptime.clock.os bechamel))
+ (libraries linux_clock perf fmt.tty bechamel))
