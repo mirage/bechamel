@@ -1,3 +1,7 @@
+(* Code under Apache License 2.0 but without owner.
+ * I believe owner is Jane Street Group, LLC <opensource@janestreet.com>
+ *)
+
 let col_norm a column =
   let acc = ref 0. in
   for i = 0 to Array.length a - 1 do

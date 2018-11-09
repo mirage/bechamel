@@ -1,3 +1,7 @@
+(* Copyright (c) 2016 Daniel C. Bünzli
+
+   XXX(dinosaure): use an [array] instead a [Map.S]. *)
+
 module TypeIdentifier = struct type _ t = .. end
 
 module type TypeIdentifier = sig
@@ -24,8 +28,7 @@ end
 
 let type_identifier (type a) () =
   let module M = struct
-    type t = a
-    type _ TypeIdentifier.t += T : t TypeIdentifier.t
+    type t = a type _ TypeIdentifier.t += T : t TypeIdentifier.t
   end in
   (module M : TypeIdentifier with type t = a)
 
