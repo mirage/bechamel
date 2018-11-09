@@ -83,28 +83,6 @@ let instance (type w a)
   let module Ext = (val x) in
   Ext.T (X.make (), X.epsilon ())
 
-module One = struct
-  type witness = unit
-  type value = int ref
-  type label = string
-
-  let load () = ()
-  let unload () = ()
-  let make () = ()
-  let float _ = 1.
-  let label () = "one"
-
-  let diff a b =
-    assert (a = b) ;
-    a
-
-  let epsilon () = {contents= 1}
-  let blit () v = v := 1
-end
-
-let extension_one = make (module One)
-let instance_one = instance (module One) extension_one
-
 let ( ++ ) : Extension.t -> Extension.t -> Label.t array =
  fun a b ->
   let (Extension.V (ia, ma)) = Extension.proj a in

@@ -48,13 +48,6 @@ val instance :
   -> ('w, 'a) Switch.bind Extension.extension
   -> Extension.t
 
-(** Extension [One]. *)
-
-module One : UNSAFE
-
-val extension_one : (One.witness, One.value) Switch.bind Extension.extension
-val instance_one : Extension.t
-
 (** Accessors *)
 
 val label : Extension.t -> Label.t

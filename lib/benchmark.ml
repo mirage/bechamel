@@ -69,7 +69,7 @@ let run ?(sampling = `Geometric 1.01) ?(stabilize = false)
     Ext.T (Run.make (), Run.epsilon ())
   in
   let measures =
-    Array.of_list (instance_run :: Measure.instance_one :: measures)
+    Array.of_list (instance_run :: Toolkit.Instance.one :: measures)
   in
   (* extract fn *)
   let (Test.V fn) = Test.Elt.fn test in

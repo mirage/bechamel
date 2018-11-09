@@ -1,44 +1,7 @@
 let () = Printexc.record_backtrace true
 
 open Bechamel
-
-module Minor_allocated = struct
-  type witness = unit
-  type value = float ref
-  type label = string
-
-  let stat : Gc.stat ref = {contents= Gc.quick_stat ()}
-  let load () = ()
-  let unload () = ()
-  let make () = ()
-  let float x = !x
-  let diff a b = {contents= !b -. !a}
-  let epsilon () = {contents= 0.}
-  let label () = "minor-allocated"
-
-  let blit () v =
-    stat := Gc.quick_stat () ;
-    v := !stat.minor_words
-end
-
-module Major_allocated = struct
-  type witness = unit
-  type value = float ref
-  type label = string
-
-  let stat : Gc.stat ref = {contents= Gc.quick_stat ()}
-  let load () = ()
-  let unload () = ()
-  let make () = ()
-  let float x = !x
-  let diff a b = {contents= !b -. !a}
-  let epsilon () = {contents= 0.}
-  let label () = "major-allocated"
-
-  let blit () v =
-    stat := Gc.quick_stat () ;
-    v := !stat.major_words
-end
+open Toolkit
 
 module Monotonic_clock = struct
   type witness = int
@@ -89,20 +52,25 @@ module Cpu_clock = struct
   let blit witness v = v := Perf.read witness
 end
 
-let ext_minor_words = Measure.make (module Minor_allocated)
-let ext_major_words = Measure.make (module Major_allocated)
-let ext_cpu_clock = Measure.make (module Cpu_clock)
-let ext_monotonic_clock = Measure.make (module Monotonic_clock)
-let ext_realtime_clock = Measure.make (module Realtime_clock)
-let ins_minor_words = Measure.instance (module Minor_allocated) ext_minor_words
-let ins_major_words = Measure.instance (module Major_allocated) ext_major_words
-let ins_cpu_clock = Measure.instance (module Cpu_clock) ext_cpu_clock
+module Extension = struct
+  include Extension
 
-let ins_monotonic_clock =
-  Measure.instance (module Monotonic_clock) ext_monotonic_clock
+  let cpu_clock = Measure.make (module Cpu_clock)
+  let monotonic_clock = Measure.make (module Monotonic_clock)
+  let realtime_clock = Measure.make (module Realtime_clock)
+end
 
-let ins_real_clock =
-  Measure.instance (module Realtime_clock) ext_realtime_clock
+module Instance = struct
+  include Instance
+
+  let cpu_clock = Measure.instance (module Cpu_clock) Extension.cpu_clock
+
+  let monotonic_clock =
+    Measure.instance (module Monotonic_clock) Extension.monotonic_clock
+
+  let real_clock =
+    Measure.instance (module Realtime_clock) Extension.realtime_clock
+end
 
 let nothing words =
   Staged.stage (fun () ->
@@ -124,12 +92,14 @@ let analyze responders measures =
 let () =
   let results =
     Benchmark.all
-      [ ins_minor_words; ins_major_words; ins_cpu_clock; ins_monotonic_clock
-      ; ins_real_clock ]
+      Instance.
+        [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
+        ; real_clock ]
       test
     |> analyze
-         [ ins_minor_words; ins_major_words; ins_cpu_clock; ins_monotonic_clock
-         ; ins_real_clock ]
+         Instance.
+           [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
+           ; real_clock ]
   in
   Fmt.pr "%a.\n%!"
     Fmt.(Dump.list (Dump.list Analyze.(pp ~colors:Map.empty)))
