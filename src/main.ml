@@ -80,22 +80,15 @@ let nothing words =
 let test = Test.make_indexed ~name:"nothing" ~args:[0; 10; 100; 400] nothing
 let () = Fmt_tty.setup_std_outputs ~style_renderer:`Ansi_tty ~utf_8:true ()
 
-let ols_analyze responders measures =
-  List.map
-    (fun responder ->
-      List.map
-        (Analyze.OLS.ols ~responder:(Measure.label responder)
-           ~predictors:Measure.(with_run []))
-        measures )
-    responders
-
-let ransac_analyze instances measures =
+let analyze kind instances measures =
   List.map
     (fun label ->
-      List.map (Analyze.RANSAC.ransac (Measure.label label)) measures )
+      List.map (Analyze.analyze kind (Measure.label label)) measures )
     instances
 
 let () =
+  let ols = Analyze.ols ~predictors:Measure.(with_run []) in
+  let ransac = Analyze.ransac ~filter_outliers:false in
   let results =
     Benchmark.all
       Instance.
@@ -103,20 +96,13 @@ let () =
         ; real_clock ]
       test
     |> fun m ->
-    let ols =
-      ols_analyze
-        Instance.
-          [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
-          ; real_clock ]
-        m
+    let instances =
+      Instance.
+        [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
+        ; real_clock ]
     in
-    let ransac =
-      ransac_analyze
-        Instance.
-          [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
-          ; real_clock ]
-        m
-    in
+    let ols = analyze ols instances m in
+    let ransac = analyze ransac instances m in
     (ols, ransac)
   in
   Fmt.pr "%a.\n%!"

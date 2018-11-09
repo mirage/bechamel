@@ -118,18 +118,15 @@ module RANSAC = struct
     sqrt (sum_dy /. float (Array.length r - 2)) /. sqrt (sum (Array.map dx r))
 
   type t =
-    { mean_value: float
+    { label: Label.t
+    ; mean_value: float
     ; constant: float
     ; max_value: int * float
     ; min_value: int * float
     ; standard_error: float }
 
   let pp ppf t =
-    Fmt.pf ppf
-      "{ @[<hov>mean = %f;@ constant = %f;@ max = %d:%f;@ min = %d:%f;@ error \
-       = %f@] }"
-      t.mean_value t.constant (fst t.max_value) (snd t.max_value)
-      (fst t.min_value) (snd t.min_value) t.standard_error
+    Fmt.pf ppf "{ @[<hov>%a per run = = %f;@] }" Label.pp t.label t.mean_value
 
   let result_column c m =
     (int_of_float (Measurement_raw.run m), Measurement_raw.get ~label:c m)
@@ -164,5 +161,18 @@ module RANSAC = struct
         (0, min_float) a
     in
     let standard_error = standard_error ~a:mean_value ~b:constant a in
-    {mean_value; constant; min_value; max_value; standard_error}
+    {label= c; mean_value; constant; min_value; max_value; standard_error}
 end
+
+type 'a t =
+  | OLS : {predictors: Label.t array} -> OLS.t t
+  | RANSAC : {filter_outliers: bool} -> RANSAC.t t
+
+let ols ~predictors = OLS {predictors}
+let ransac ~filter_outliers = RANSAC {filter_outliers}
+
+let analyze : type a. a t -> Label.t -> Measurement_raw.t array -> a =
+ fun kind label m ->
+  match kind with
+  | OLS {predictors} -> OLS.ols ~predictors ~responder:label m
+  | RANSAC {filter_outliers} -> RANSAC.ransac ~filter_outliers label m
