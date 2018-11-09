@@ -80,14 +80,20 @@ let nothing words =
 let test = Test.make_indexed ~name:"nothing" ~args:[0; 10; 100; 400] nothing
 let () = Fmt_tty.setup_std_outputs ~style_renderer:`Ansi_tty ~utf_8:true ()
 
-let analyze responders measures =
+let ols_analyze responders measures =
   List.map
     (fun responder ->
       List.map
-        (Analyze.ols ~responder:(Measure.label responder)
+        (Analyze.OLS.ols ~responder:(Measure.label responder)
            ~predictors:Measure.(with_run []))
         measures )
     responders
+
+let ransac_analyze instances measures =
+  List.map
+    (fun label ->
+      List.map (Analyze.RANSAC.ransac (Measure.label label)) measures )
+    instances
 
 let () =
   let results =
@@ -96,11 +102,26 @@ let () =
         [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
         ; real_clock ]
       test
-    |> analyze
-         Instance.
-           [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
-           ; real_clock ]
+    |> fun m ->
+    let ols =
+      ols_analyze
+        Instance.
+          [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
+          ; real_clock ]
+        m
+    in
+    let ransac =
+      ransac_analyze
+        Instance.
+          [ minor_allocated; major_allocated; cpu_clock; monotonic_clock
+          ; real_clock ]
+        m
+    in
+    (ols, ransac)
   in
   Fmt.pr "%a.\n%!"
-    Fmt.(Dump.list (Dump.list Analyze.(pp ~colors:Map.empty)))
+    Fmt.(
+      Dump.pair
+        (Dump.list (Dump.list Analyze.OLS.(pp ~colors:Map.empty)))
+        (Dump.list (Dump.list Analyze.RANSAC.pp)))
     results

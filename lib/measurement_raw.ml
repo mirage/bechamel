@@ -17,6 +17,8 @@ let get_index ~label m =
     raise Not_found
   with Find -> !i0
 
+let run t = t.run
+
 let get ~label m =
   let i = get_index ~label m in
   m.measures.(i)
