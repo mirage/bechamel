@@ -1,3 +1,5 @@
+(* (c) Frédéric Bour *)
+
 module Make (Functor : S.FUNCTOR) = struct
   type t = ..
 
@@ -27,9 +29,11 @@ module Make (Functor : S.FUNCTOR) = struct
   end
 
   let inj (type a) (f : a Functor.t) : a extension =
-    (module Injection (struct type t = a
+    ( module Injection (struct
+      type t = a
 
-                              let instance = f end))
+      let instance = f
+    end) )
 
   let proj (t : t) =
     let rec go = function
