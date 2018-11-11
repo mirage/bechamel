@@ -39,11 +39,11 @@ end
 module RANSAC = struct
   (* returns [a, b] such that [f(x) = a*x + b] minimize the distance between
      [sum(fun (x -> (f(x) - v(x))^2)] *)
-  let affine_adjustment (r : (int * float) array) =
+  let affine_adjustment (r : (float * float) array) =
     let len = float (Array.length r) in
     let mean_x =
-      let sum_x = Array.fold_right (fun (x, _) acc -> x + acc) r 0 in
-      float sum_x /. len
+      let sum_x = Array.fold_right (fun (x, _) acc -> x +. acc) r 0. in
+      sum_x /. len
     in
     let mean_y =
       let sum_y = Array.fold_right (fun (_, y) acc -> y +. acc) r 0. in
@@ -53,7 +53,7 @@ module RANSAC = struct
       let sumvar =
         Array.fold_right
           (fun (x, _) acc ->
-            let v = float x -. mean_x in
+            let v = x -. mean_x in
             (v *. v) +. acc )
           r 0.
       in
@@ -63,7 +63,7 @@ module RANSAC = struct
       let sumcovar =
         Array.fold_right
           (fun (x, y) acc ->
-            let v = (float x -. mean_x) *. (y -. mean_y) in
+            let v = (x -. mean_x) *. (y -. mean_y) in
             v +. acc )
           r 0.
       in
@@ -78,7 +78,7 @@ module RANSAC = struct
     for i = 0 to Array.length data - 1 do
       let x, y = data.(i) in
       let diff =
-        let d = (a *. float x) +. b -. y in
+        let d = (a *. x) +. b -. y in
         d *. d
       in
       acc := !acc +. diff
@@ -86,8 +86,8 @@ module RANSAC = struct
     !acc /. float (Array.length data)
 
   let ransac_filter_distance (x, y) (a, b) =
-    let level = max (float x) (max y (max a b)) in
-    abs_float ((a *. float x) +. b -. y) /. level
+    let level = max x (max y (max a b)) in
+    abs_float ((a *. x) +. b -. y) /. level
 
   let ransac_param data =
     { Ransac.model= affine_adjustment
@@ -101,18 +101,18 @@ module RANSAC = struct
 
   let sum a = Array.fold_left ( +. ) 0. a
 
-  let standard_error ~a ~b (r : (int * float) array) =
-    let estimate x = (a *. float x) +. b in
+  let standard_error ~a ~b (r : (float * float) array) =
+    let estimate x = (a *. x) +. b in
     let dy (x, y) =
       let d = y -. estimate x in
       d *. d
     in
     let sum_dy = sum (Array.map dy r) in
     let mean_x =
-      sum (Array.map (fun (x, _) -> float x) r) /. float (Array.length r)
+      sum (Array.map (fun (x, _) -> x) r) /. float (Array.length r)
     in
     let dx (x, _) =
-      let d = float x -. mean_x in
+      let d = x -. mean_x in
       d *. d
     in
     sqrt (sum_dy /. float (Array.length r - 2)) /. sqrt (sum (Array.map dx r))
@@ -121,15 +121,15 @@ module RANSAC = struct
     { label: Label.t
     ; mean_value: float
     ; constant: float
-    ; max_value: int * float
-    ; min_value: int * float
+    ; max_value: float * float
+    ; min_value: float * float
     ; standard_error: float }
 
   let pp ppf t =
     Fmt.pf ppf "{ @[<hov>%a per run = = %f;@] }" Label.pp t.label t.mean_value
 
   let result_column c m =
-    (int_of_float (Measurement_raw.run m), Measurement_raw.get ~label:c m)
+    (Measurement_raw.run m, Measurement_raw.get ~label:c m)
 
   let ransac ?(filter_outliers = true) c ml =
     let a = Array.map (result_column c) ml in
@@ -145,20 +145,20 @@ module RANSAC = struct
     let min_value =
       Array.fold_left
         (fun (row_min, val_min) (row, value) ->
-          let value = (value -. constant) /. float row in
+          let value = (value -. constant) /. row in
           if val_min < value || value <= 0. then (row_min, val_min)
           else (row, value) )
-        (0, max_float) a
+        (0., max_float) a
     in
     let correct_float f = classify_float f = FP_normal in
     let max_value =
       Array.fold_left
         (fun (row_max, val_max) (row, value) ->
-          let value = (value -. constant) /. float row in
+          let value = (value -. constant) /. row in
           if val_max > value || not (correct_float value) then
             (row_max, val_max)
           else (row, value) )
-        (0, min_float) a
+        (0., min_float) a
     in
     let standard_error = standard_error ~a:mean_value ~b:constant a in
     {label= c; mean_value; constant; min_value; max_value; standard_error}
