@@ -5,6 +5,7 @@ module OLS = struct
     (* 95% confidence interval *)
     type t = {r: float; l: float}
 
+    let pp ppf x = Fmt.pf ppf "@[<hov>%f to %f@]" x.r x.l
     let abs_err t ~estimate = (t.l -. estimate, t.r -. estimate)
 
     let rel_err t ~estimate =
@@ -12,10 +13,6 @@ module OLS = struct
       (low /. estimate, high /. estimate)
 
     let bad = {r= Float.neg_infinity; l= Float.neg_infinity}
-  end
-
-  module Coefficient = struct
-    type t = {predictor: Label.t; estimate: float; mutable ci95: Ci95.t option}
   end
 
   (* Linear regression inputs *)
@@ -28,13 +25,13 @@ module OLS = struct
           Array.map (fun a -> a m.(i)) predictors_accessor )
     , Array.init (Array.length m) (fun i -> responder_accessor m.(i)) )
 
-  type v =
-    { labels: Label.t array
+  type t =
+    { predictors: Label.t array
     ; responder: Label.t
-    ; estimates: float array
-    ; r_square: float option }
+    ; value: (v, Rresult.R.msg) result }
 
-  and t = (v, Rresult.R.msg) result
+  and v =
+    {estimates: float array; ci95: Ci95.t array option; r_square: float option}
 
   let r_square m ~responder ~predictors r =
     let predictors_matrix, responder_vector =
@@ -57,8 +54,72 @@ module OLS = struct
     done ;
     1. -. (!res_ss /. !tot_ss)
 
+  (* XXX(dinosaure): see core_bench and [(1/e)^bootstrap_threshold <
+     0.05/predictors] which describe area on top of logarithm curve (where
+     maximum seems close to 6~7). *)
+  let bootstrap_threshold = 10
+
+  let can_bootstrap ~responder ~predictors m =
+    let matrix, _ = make_lr_inputs ~responder ~predictors m in
+    let non_zero = Array.make (Array.length predictors) 0 in
+    let non_zero_cols = ref 0 in
+    Array.iter
+      (fun row ->
+        for i = 0 to Array.length non_zero - 1 do
+          if row.(i) <> 0.0 then (
+            non_zero.(i) <- non_zero.(i) + 1 ;
+            if non_zero.(i) = bootstrap_threshold then incr non_zero_cols )
+        done )
+      matrix ;
+    if !non_zero_cols = Array.length non_zero then true else false
+
+  let () = Random.self_init ()
+
+  let random_indices_in_place ~max arr =
+    let len = Array.length arr in
+    for i = 0 to len - 1 do
+      arr.(i) <- Random.int max
+    done
+
+  let quantile_of_array arr ?(failures = 0) ~len ~low ~high =
+    Array.sort (compare : float -> float -> int) arr ;
+    let index q = int_of_float ((float len *. q) +. (0.5 *. float failures)) in
+    let extended_get i = if i >= len then Float.infinity else arr.(i) in
+    let l = extended_get ((min : int -> int -> int) (index low) (len - 1)) in
+    let r = extended_get ((max : int -> int -> int) (index high) failures) in
+    Ci95.{l; r}
+
+  let bootstrap ~trials m ~responder ~predictors =
+    let p = Array.length predictors in
+    match can_bootstrap ~responder ~predictors m with
+    | false -> assert false
+    | true ->
+        let bootstrap_fails = ref 0 in
+        let indices = Array.make (Array.length m) 0 in
+        let bootstrap_coeffs = Array.init p (fun _ -> Array.make trials 0.0) in
+        for i = 0 to trials - 1 do
+          random_indices_in_place indices ~max:(Array.length m) ;
+          let matrix, vector = make_lr_inputs ~responder ~predictors m in
+          match Linear_algebra.ols ~in_place:true matrix vector with
+          | Ok bt_ols_result ->
+              for p = 0 to p - 1 do
+                bootstrap_coeffs.(p).(i) <- bt_ols_result.(p)
+              done
+          | _ ->
+              incr bootstrap_fails ;
+              for p = 0 to p - 1 do
+                bootstrap_coeffs.(p).(i) <- Float.neg_infinity
+              done
+        done ;
+        Array.init p (fun i ->
+            if trials = 0 then Ci95.bad
+            else
+              quantile_of_array bootstrap_coeffs.(i) ~failures:!bootstrap_fails
+                ~len:trials ~low:0.025 ~high:0.975 )
+
   (* Ordinary Least Square *)
-  let ols ?r_square:(do_r_square = false) ~responder ~predictors m =
+  let ols ?bootstrap:(trials = 0) ?r_square:(do_r_square = false) ~responder
+      ~predictors m =
     let matrix, vector = make_lr_inputs ~responder ~predictors m in
     match Linear_algebra.ols ~in_place:true matrix vector with
     | Ok estimates ->
@@ -67,32 +128,63 @@ module OLS = struct
             Some (r_square m ~responder ~predictors estimates)
           else None
         in
-        Ok {labels= predictors; responder; estimates; r_square}
-    | Error _ as err -> err
+        let ci95 =
+          match trials with
+          | 0 -> None
+          | trials -> Some (bootstrap ~trials ~responder ~predictors m)
+        in
+        {predictors; responder; value= Ok {estimates; ci95; r_square}}
+    | Error _ as err -> {predictors; responder; value= err}
 
-  let pp ?(colors = Label.Map.empty) ppf x =
+  let style_by_r_square = function
+    | Some r_square ->
+        if r_square >= 0.95 then `Green
+        else if r_square >= 0.90 then `Yellow
+        else `Red
+    | None -> `None
+
+  let pp ~predictors ~responder ?(colors = Label.Map.empty) ppf v =
     Fmt.pf ppf "{ @[" ;
     let style_responder =
-      match Label.Map.find_opt x.responder colors with
+      match Label.Map.find_opt responder colors with
       | Some x -> x
       | None -> `None
     in
-    for i = 0 to Array.length x.labels - 1 do
+    for i = 0 to Array.length predictors - 1 do
       let style_label =
-        match Label.Map.find_opt x.labels.(i) colors with
+        match Label.Map.find_opt predictors.(i) colors with
         | Some x -> x
         | None -> `None
       in
-      Fmt.pf ppf "%a per %a = %f;@ "
+      Fmt.pf ppf "%a per %a = %a"
         Fmt.(styled style_responder Label.pp)
-        x.responder
+        responder
         Fmt.(styled style_label Label.pp)
-        x.labels.(i) x.estimates.(i)
+        predictors.(i)
+        Fmt.(styled (style_by_r_square v.r_square) float)
+        v.estimates.(i) ;
+      ( match v.ci95 with
+      | Some ci95 -> Fmt.pf ppf " (confidence: %a)" Ci95.pp ci95.(i)
+      | None -> () ) ;
+      Fmt.pf ppf ";@ "
     done ;
-    Fmt.pf ppf "r-square = %a@] }" Fmt.(Dump.option float) x.r_square
+    Fmt.pf ppf "r-square = %a@] }" Fmt.(Dump.option float) v.r_square
 
   let pp ?colors ppf x =
-    Fmt.result ~ok:(pp ?colors) ~error:Rresult.R.pp_msg ppf x
+    match x.value with
+    | Ok v -> pp ~predictors:x.predictors ~responder:x.responder ?colors ppf v
+    | Error err -> Rresult.R.pp_msg ppf err
+
+  let predictors {predictors; _} = Array.to_list predictors
+  let responder {responder; _} = responder
+
+  let estimates {value; _} =
+    match value with
+    | Ok {estimates; _} -> Some (Array.to_list estimates)
+    | Error _ -> None
+
+  let r_square {value; _} =
+    match value with Ok {r_square; _} -> r_square | Error _ -> None
 end
 
 module RANSAC = struct
@@ -243,19 +335,31 @@ module RANSAC = struct
     ; min_value
     ; max_value
     ; standard_error }
+
+  let responder {responder; _} = responder
+  let predictor {predictor; _} = predictor
+  let mean {mean_value; _} = mean_value
+  let constant {constant; _} = constant
+  let min {min_value; _} = min_value
+  let max {max_value; _} = max_value
+  let error {standard_error; _} = standard_error
 end
 
 type 'a t =
-  | OLS : {predictors: Label.t array; r_square: bool} -> OLS.t t
+  | OLS :
+      { predictors: Label.t array
+      ; r_square: bool
+      ; bootstrap: int }
+      -> OLS.t t
   | RANSAC : {filter_outliers: bool; predictor: Label.t} -> RANSAC.t t
 
-let ols ~r_square ~predictors = OLS {predictors; r_square}
+let ols ~r_square ~bootstrap ~predictors = OLS {predictors; r_square; bootstrap}
 let ransac ~filter_outliers ~predictor = RANSAC {filter_outliers; predictor}
 
 let analyze : type a. a t -> Label.t -> Measurement_raw.t array -> a =
  fun kind label m ->
   match kind with
-  | OLS {predictors; r_square} ->
-      OLS.ols ~r_square ~predictors ~responder:label m
+  | OLS {predictors; r_square; bootstrap} ->
+      OLS.ols ~bootstrap ~r_square ~predictors ~responder:label m
   | RANSAC {filter_outliers; predictor} ->
       RANSAC.ransac ~filter_outliers ~predictor ~responder:label m
