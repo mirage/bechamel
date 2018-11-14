@@ -21,6 +21,7 @@ depends: [
   "fmt"
   "rresult"
   "mtime"
+  "logs"
   "base-bytes"
   "base-bigarray"
 ]

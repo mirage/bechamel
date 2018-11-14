@@ -16,6 +16,10 @@ let unzip t =
   in
   (a, b, c)
 
+let src = Logs.Src.create "benchmark" ~doc:"logs benchmark's events"
+
+module Log = (val Logs.src_log src : Logs.LOG)
+
 let stabilize_garbage_collector () =
   let rec go fail last_heap_live_words =
     if fail <= 0 then
@@ -231,6 +235,11 @@ let () = Random.self_init ()
 
 let estimate ~sampling bmin bmax fn =
   let rec reduce ~bmin ~bmax n_min n_max =
+    Logs.debug (fun f ->
+        f
+          "reduce estimation minimal-time:%a, maximum-time:%a, \
+           minimum-run:%d, maximum-run:%d."
+          Mtime.Span.pp bmin Mtime.Span.pp bmax n_min n_max ) ;
     let interval = n_max - n_min in
     if interval <= 1 then n_max
     else
@@ -243,6 +252,8 @@ let estimate ~sampling bmin bmax fn =
       else new_iter
   in
   let rec loop ~previous_iter iter =
+    Logs.debug (fun f ->
+        f "estimate run:%d, previous-run:%d." iter previous_iter ) ;
     let time = time_it ~sampling iter fn in
     if Mtime.Span.compare time bmax < 0 then
       loop ~previous_iter:iter (iter lsl 1)
@@ -267,5 +278,8 @@ let all ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota measures test
             let iter = estimate ~sampling Mtime.Span.zero default_quota test in
             (time_it ~sampling iter test, iter)
       in
+      Logs.debug (fun f ->
+          f "Start to run %s (run: %d, quota: %a)." (Test.Elt.name test) iter
+            Mtime.Span.pp quota ) ;
       run ~sampling ?stabilize ~quota iter measures test )
     tests
