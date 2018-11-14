@@ -266,13 +266,18 @@ let estimate ~sampling bmin bmax fn =
 
 let all ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota measures test
     =
+  Logs.debug (fun f -> f "Start to benchmark %s." (Test.name test)) ;
   let tests = Test.set test in
   List.map
     (fun test ->
       let quota, iter =
         match (quota, iter) with
         | Some x, None -> (x, estimate ~sampling Mtime.Span.zero x test)
-        | None, Some x -> (time_it ~sampling x test, x)
+        | None, Some x ->
+            Logs.debug (fun f ->
+                f "Estimate time for %d run(s) of %s." x (Test.Elt.name test)
+            ) ;
+            (time_it ~sampling x test, x)
         | Some quota, Some iter -> (quota, iter)
         | None, None ->
             let iter = estimate ~sampling Mtime.Span.zero default_quota test in
