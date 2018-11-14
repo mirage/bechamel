@@ -74,11 +74,11 @@ let is_nan v = match classify_float v with FP_nan -> true | _ -> false
 let triu_solve r b =
   let m = Array.length b in
   if m <> Array.length r then
-    invalid_arg
+    Rresult.R.error_msgf
       "triu_solve R b requires R to be square with same number of rows as b"
-  else if m = 0 then [||]
+  else if m = 0 then Rresult.R.ok [||]
   else if m <> Array.length r.(0) then
-    invalid_arg "triu_solve R b requires R to be square"
+    Rresult.R.error_msgf "triu_solve R b requires R to be a square"
   else
     let sol = Array.copy b in
     for i = m - 1 downto 0 do
@@ -88,8 +88,8 @@ let triu_solve r b =
       done
     done ;
     if Array.exists is_nan sol then
-      invalid_arg "triu_solve detected NaN result"
-    else sol
+      Rresult.R.error_msgf "triu_solve detected NaN result"
+    else Rresult.R.ok sol
 
 let ols ?(in_place = false) a b =
   let q, r = qr ~in_place a in

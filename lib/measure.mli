@@ -52,4 +52,5 @@ val instance :
 
 val label : Extension.t -> Label.t
 val ( ++ ) : Extension.t -> Extension.t -> Label.t array
+val run : Label.t
 val with_run : Extension.t list -> Label.t array

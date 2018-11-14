@@ -1,4 +1,23 @@
+[@@@warning "-32-34"]
+
 module OLS = struct
+  module Ci95 = struct
+    (* 95% confidence interval *)
+    type t = {r: float; l: float}
+
+    let abs_err t ~estimate = (t.l -. estimate, t.r -. estimate)
+
+    let rel_err t ~estimate =
+      let low, high = abs_err t ~estimate in
+      (low /. estimate, high /. estimate)
+
+    let bad = {r= Float.neg_infinity; l= Float.neg_infinity}
+  end
+
+  module Coefficient = struct
+    type t = {predictor: Label.t; estimate: float; mutable ci95: Ci95.t option}
+  end
+
   (* Linear regression inputs *)
   let make_lr_inputs ~responder ~predictors m =
     let responder_accessor = Measurement_raw.get ~label:responder in
@@ -9,31 +28,71 @@ module OLS = struct
           Array.map (fun a -> a m.(i)) predictors_accessor )
     , Array.init (Array.length m) (fun i -> responder_accessor m.(i)) )
 
-  type t = {labels: Label.t array; responder: Label.t; estimates: float array}
+  type v =
+    { labels: Label.t array
+    ; responder: Label.t
+    ; estimates: float array
+    ; r_square: float option }
+
+  and t = (v, Rresult.R.msg) result
+
+  let r_square m ~responder ~predictors r =
+    let predictors_matrix, responder_vector =
+      make_lr_inputs ~responder ~predictors m
+    in
+    let sum_responder = Array.fold_left ( +. ) 0. responder_vector in
+    let mean = sum_responder /. float (Array.length responder_vector) in
+    let tot_ss = ref 0. in
+    let res_ss = ref 0. in
+    let predicted i =
+      let x = ref 0. in
+      for j = 0 to Array.length r - 1 do
+        x := !x +. (predictors_matrix.(i).(j) *. r.(j))
+      done ;
+      !x
+    in
+    for i = 0 to Array.length responder_vector - 1 do
+      tot_ss := !tot_ss +. ((responder_vector.(i) -. mean) ** 2.) ;
+      res_ss := !res_ss +. ((responder_vector.(i) -. predicted i) ** 2.)
+    done ;
+    1. -. (!res_ss /. !tot_ss)
 
   (* Ordinary Least Square *)
-  let ols ~responder ~predictors m =
+  let ols ?r_square:(do_r_square = false) ~responder ~predictors m =
     let matrix, vector = make_lr_inputs ~responder ~predictors m in
-    let estimates = Linear_algebra.ols ~in_place:true matrix vector in
-    {labels= predictors; responder; estimates}
+    match Linear_algebra.ols ~in_place:true matrix vector with
+    | Ok estimates ->
+        let r_square =
+          if do_r_square then
+            Some (r_square m ~responder ~predictors estimates)
+          else None
+        in
+        Ok {labels= predictors; responder; estimates; r_square}
+    | Error _ as err -> err
 
-  module Map = Map.Make (String)
-
-  let pp ?(colors = Map.empty) ppf x =
+  let pp ?(colors = Label.Map.empty) ppf x =
     Fmt.pf ppf "{ @[" ;
+    let style_responder =
+      match Label.Map.find_opt x.responder colors with
+      | Some x -> x
+      | None -> `None
+    in
     for i = 0 to Array.length x.labels - 1 do
-      let style =
-        match Map.find_opt (x.labels.(i) :> string) colors with
+      let style_label =
+        match Label.Map.find_opt x.labels.(i) colors with
         | Some x -> x
         | None -> `None
       in
-      Fmt.pf ppf "%s per %s = %a;@ "
-        (x.responder :> string)
-        (x.labels.(i) :> string)
-        Fmt.(styled style float)
-        x.estimates.(i)
+      Fmt.pf ppf "%a per %a = %f;@ "
+        Fmt.(styled style_responder Label.pp)
+        x.responder
+        Fmt.(styled style_label Label.pp)
+        x.labels.(i) x.estimates.(i)
     done ;
-    Fmt.pf ppf "#end@] }"
+    Fmt.pf ppf "r-square = %a@] }" Fmt.(Dump.option float) x.r_square
+
+  let pp ?colors ppf x =
+    Fmt.result ~ok:(pp ?colors) ~error:Rresult.R.pp_msg ppf x
 end
 
 module RANSAC = struct
@@ -118,21 +177,37 @@ module RANSAC = struct
     sqrt (sum_dy /. float (Array.length r - 2)) /. sqrt (sum (Array.map dx r))
 
   type t =
-    { label: Label.t
+    { predictor: Label.t
+    ; responder: Label.t
     ; mean_value: float
     ; constant: float
     ; max_value: float * float
     ; min_value: float * float
     ; standard_error: float }
 
-  let pp ppf t =
-    Fmt.pf ppf "{ @[<hov>%a per run = = %f;@] }" Label.pp t.label t.mean_value
+  let pp ?(colors = Label.Map.empty) ppf t =
+    let style_responder =
+      match Label.Map.find_opt t.responder colors with
+      | Some style -> style
+      | None -> `None
+    in
+    let style_predictor =
+      match Label.Map.find_opt t.predictor colors with
+      | Some style -> style
+      | None -> `None
+    in
+    Fmt.pf ppf "{ @[<hov>%a per %a = %f;@ standard-error = %f;@] }"
+      (Fmt.styled style_responder Label.pp)
+      t.responder
+      (Fmt.styled style_predictor Label.pp)
+      t.predictor t.mean_value t.standard_error
 
-  let result_column c m =
-    (Measurement_raw.run m, Measurement_raw.get ~label:c m)
+  let result_column ~predictor ~responder m =
+    ( Measurement_raw.get ~label:predictor m
+    , Measurement_raw.get ~label:responder m )
 
-  let ransac ?(filter_outliers = true) c ml =
-    let a = Array.map (result_column c) ml in
+  let ransac ?(filter_outliers = true) ~predictor ~responder ml =
+    let a = Array.map (result_column ~predictor ~responder) ml in
     let mean_value, constant =
       if filter_outliers then
         match Ransac.ransac (ransac_param a) with
@@ -161,18 +236,26 @@ module RANSAC = struct
         (0., min_float) a
     in
     let standard_error = standard_error ~a:mean_value ~b:constant a in
-    {label= c; mean_value; constant; min_value; max_value; standard_error}
+    { predictor
+    ; responder
+    ; mean_value
+    ; constant
+    ; min_value
+    ; max_value
+    ; standard_error }
 end
 
 type 'a t =
-  | OLS : {predictors: Label.t array} -> OLS.t t
-  | RANSAC : {filter_outliers: bool} -> RANSAC.t t
+  | OLS : {predictors: Label.t array; r_square: bool} -> OLS.t t
+  | RANSAC : {filter_outliers: bool; predictor: Label.t} -> RANSAC.t t
 
-let ols ~predictors = OLS {predictors}
-let ransac ~filter_outliers = RANSAC {filter_outliers}
+let ols ~r_square ~predictors = OLS {predictors; r_square}
+let ransac ~filter_outliers ~predictor = RANSAC {filter_outliers; predictor}
 
 let analyze : type a. a t -> Label.t -> Measurement_raw.t array -> a =
  fun kind label m ->
   match kind with
-  | OLS {predictors} -> OLS.ols ~predictors ~responder:label m
-  | RANSAC {filter_outliers} -> RANSAC.ransac ~filter_outliers label m
+  | OLS {predictors; r_square} ->
+      OLS.ols ~r_square ~predictors ~responder:label m
+  | RANSAC {filter_outliers; predictor} ->
+      RANSAC.ransac ~filter_outliers ~predictor ~responder:label m

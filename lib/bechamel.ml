@@ -8,5 +8,8 @@ module Staged = Staged
 module Measurement_raw = Measurement_raw
 module Linear_algebra = Linear_algebra
 module Analyze = Analyze
-module Label : Label.Safe = Label
+
+module Label : Label.Safe with type t = Label.t and module Map = Label.Map =
+  Label
+
 module Toolkit = Toolkit

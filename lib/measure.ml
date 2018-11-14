@@ -100,6 +100,7 @@ let label : Extension.t -> Label.t =
   let w = fst i in
   M.label w
 
+let run = Label.of_string "run"
+
 let with_run : Extension.t list -> Label.t array =
- fun l ->
-  Array.append [|Label.of_string "run"|] (Array.of_list (List.map label l))
+ fun l -> Array.append [|run|] (Array.of_list (List.map label l))

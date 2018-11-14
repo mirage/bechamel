@@ -1,14 +1,20 @@
 type t = private string
 
-val equal : t -> t -> bool
-val pp : t Fmt.t
-
 module type Safe = sig
   type t
 
   val equal : t -> t -> bool
+  val compare : t -> t -> int
   val pp : t Fmt.t
+
+  module Map : Map.S with type key = t
 end
+
+val equal : t -> t -> bool
+val compare : t -> t -> int
+val pp : t Fmt.t
+
+module Map : Map.S with type key = t
 
 (** / **)
 

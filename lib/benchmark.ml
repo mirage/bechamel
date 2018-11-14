@@ -16,8 +16,6 @@ let unzip t =
   in
   (a, b, c)
 
-let _max = 3000
-
 let stabilize_garbage_collector () =
   let rec go fail last_heap_live_words =
     if fail <= 0 then
@@ -31,13 +29,26 @@ let stabilize_garbage_collector () =
 
 let unit = ()
 let apply f = f unit
+let ( <.> ) f g x = f (g x)
+
+let to_span o x =
+  let open Mtime in
+  span
+    ((of_uint64_ns <.> Int64.of_float) (Mtime.s_to_ns *. (x *. o)))
+    (of_uint64_ns 0L)
+
+let ms = to_span Mtime.ms_to_s
+let us = to_span Mtime.us_to_s
+let ns = to_span Mtime.ns_to_s
+let s = to_span 1.
+let default_quota = us 250.
 
 let exceeded_allowed_time allowed_time_span t =
   let t' = Mtime_clock.now () in
   Mtime.(Span.compare (span t' t) allowed_time_span > 0)
 
 let run ?(sampling = `Geometric 1.01) ?(stabilize = false)
-    ?(quota = Mtime.Span.of_uint64_ns 1000_000_000L) measures test =
+    ?(quota = default_quota) iter measures test =
   let idx = ref 0 in
   let run = ref 0 in
   let module Run = struct
@@ -84,7 +95,7 @@ let run ?(sampling = `Geometric 1.01) ?(stabilize = false)
         M.float epsilon )
       measures
   in
-  let measurement_raw = Array.init _max allocate_measurement_raw in
+  let measurement_raw = Array.init iter allocate_measurement_raw in
   (* XXX(dinosaure): [Polytable] is generative. *)
   let module Polytable = Polytable.Make (Measure.Value) in
   let store_0 = Polytable.create ~len:(Array.length measures) in
@@ -184,6 +195,77 @@ let run ?(sampling = `Geometric 1.01) ?(stabilize = false)
       Measurement_raw.make run ~measures:m ~labels )
     (Array.sub measurement_raw 0 total)
 
-let all ?sampling ?stabilize ?quota measures test =
+(* [run_loop n test] returns the elapsed time of running [n >= 0L] times
+   [test]. *)
+let run_loop ~sampling n test =
+  let (Test.V fn) = Test.Elt.fn test in
+  let fn = fn `Init in
+  let t0 = Mtime_clock.now () in
+  let run = ref 0 in
+  for _ = 1 to n do
+    let current_run = !run in
+    for _ = 1 to !run do
+      ignore (fn ())
+    done ;
+    let next =
+      match sampling with
+      | `Linear k -> current_run + k
+      | `Geometric scale ->
+          let next_geometric =
+            int_of_float (float_of_int current_run *. scale)
+          in
+          (max : int -> int -> int) next_geometric (current_run + 1)
+    in
+    run := next
+  done ;
+  let t1 = Mtime_clock.now () in
+  Mtime.span t0 t1
+
+let _null_loop ~sampling n =
+  run_loop ~sampling n
+    (Test.Elt.unsafe_make ~name:"ignore" (Staged.stage ignore))
+
+(* Run function [f] count times, return time taken (>= 0.). *)
+let time_it ~sampling n fn = run_loop ~sampling n fn
+let () = Random.self_init ()
+
+let estimate ~sampling bmin bmax fn =
+  let rec reduce ~bmin ~bmax n_min n_max =
+    let interval = n_max - n_min in
+    if interval <= 1 then n_max
+    else
+      let new_iter = Random.int (n_max - n_min) + n_min in
+      let time = time_it ~sampling new_iter fn in
+      if Mtime.Span.compare time bmax < 0 then
+        reduce ~bmin:time ~bmax new_iter n_max
+      else if Mtime.Span.compare time bmax > 0 then
+        reduce ~bmin ~bmax n_min new_iter
+      else new_iter
+  in
+  let rec loop ~previous_iter iter =
+    let time = time_it ~sampling iter fn in
+    if Mtime.Span.compare time bmax < 0 then
+      loop ~previous_iter:iter (iter lsl 1)
+    else if Mtime.Span.compare time bmax > 0 then
+      reduce ~bmin:time ~bmax previous_iter iter
+    else if Mtime.Span.compare time bmin < 0 then assert false
+    else iter
+  in
+  loop ~previous_iter:1 1
+
+let all ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota measures test
+    =
   let tests = Test.set test in
-  List.map (fun test -> run ?sampling ?stabilize ?quota measures test) tests
+  List.map
+    (fun test ->
+      let quota, iter =
+        match (quota, iter) with
+        | Some x, None -> (x, estimate ~sampling Mtime.Span.zero x test)
+        | None, Some x -> (time_it ~sampling x test, x)
+        | Some quota, Some iter -> (quota, iter)
+        | None, None ->
+            let iter = estimate ~sampling Mtime.Span.zero default_quota test in
+            (time_it ~sampling iter test, iter)
+      in
+      run ~sampling ?stabilize ~quota iter measures test )
+    tests

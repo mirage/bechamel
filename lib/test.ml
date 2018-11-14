@@ -3,6 +3,9 @@ type packed = V : ([`Init] -> unit -> 'a) -> packed
 module Elt = struct
   type t = {key: int; name: string; fn: packed}
 
+  let unsafe_make ~name fn =
+    {key= 0; name; fn= V (fun `Init -> Staged.unstage fn)}
+
   let key {key; _} = key
   let name {name; _} = name
   let fn {fn; _} = fn
