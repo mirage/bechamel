@@ -117,7 +117,7 @@ let run ?(sampling = `Geometric 1.01) ?(stabilize = false)
         let (Measure.Switch.Value (module V)) = value in
         Polytable.add store_0 key (snd instance) ;
         (* allocate values *)
-        Polytable.add store_1 key (snd instance) ;
+        Polytable.add store_1 key (V.epsilon ()) ;
         (* allocate values *)
         let blitter = Measure.Switch.blit m witness in
         ( (fun () -> Polytable.set store_0 key blitter)
