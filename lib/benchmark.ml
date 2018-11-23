@@ -93,9 +93,9 @@ let run ?(sampling = `Geometric 1.01) ?(stabilize = false)
   let allocate_measurement_raw _ : float array =
     Array.map
       (fun x ->
-        let (Measure.Extension.V (_, m)) = Measure.Extension.proj x in
+        let (Measure.Extension.V (i, m)) = Measure.Extension.proj x in
         let (Measure.Switch.Measure (module M)) = m in
-        let epsilon = M.epsilon () in
+        let epsilon = snd i in
         M.float epsilon )
       measures
   in
