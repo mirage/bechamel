@@ -54,7 +54,7 @@ let exceeded_allowed_time allowed_time_span t =
 let run ?(sampling = `Geometric 1.01) ?(stabilize = false)
     ?(quota = default_quota) iter measures test =
   let idx = ref 0 in
-  let run = ref 0 in
+  let run = ref 1 in
   let module Run = struct
     type witness = unit
     type value = int ref
