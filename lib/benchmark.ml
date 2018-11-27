@@ -51,10 +51,10 @@ let exceeded_allowed_time allowed_time_span t =
   let t' = Mtime.of_uint64_ns (Clock.get `Monotonic) in
   Mtime.(Span.compare (span t' t) allowed_time_span > 0)
 
-let run ?(sampling = `Geometric 1.01) ?(stabilize = false)
+let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
     ?(quota = default_quota) iter measures test =
   let idx = ref 0 in
-  let run = ref 1 in
+  let run = ref start in
   let module Run = struct
     type witness = unit
     type value = int ref
@@ -264,8 +264,8 @@ let estimate ~sampling bmin bmax fn =
   in
   loop ~previous_iter:1 1
 
-let all ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota measures test
-    =
+let all ?(start = 0) ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota
+    measures test =
   Logs.debug (fun f -> f "Start to benchmark %s." (Test.name test)) ;
   let tests = Test.set test in
   List.map
@@ -286,5 +286,5 @@ let all ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota measures test
       Logs.debug (fun f ->
           f "Start to run %s (run: %d, quota: %a)." (Test.Elt.name test) iter
             Mtime.Span.pp quota ) ;
-      run ~sampling ?stabilize ~quota iter measures test )
+      run ~start ~sampling ?stabilize ~quota iter measures test )
     tests

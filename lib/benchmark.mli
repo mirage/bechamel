@@ -4,7 +4,8 @@ val us : float -> Mtime.span
 val s : float -> Mtime.span
 
 val run :
-     ?sampling:[`Linear of int | `Geometric of float]
+     ?start:int
+  -> ?sampling:[`Linear of int | `Geometric of float]
   -> ?stabilize:bool
   -> ?quota:Mtime.span
   -> int
@@ -20,7 +21,8 @@ val estimate :
   -> int
 
 val all :
-     ?sampling:[`Linear of int | `Geometric of float]
+     ?start:int
+  -> ?sampling:[`Linear of int | `Geometric of float]
   -> ?stabilize:bool
   -> ?run:int
   -> ?quota:Mtime.span
