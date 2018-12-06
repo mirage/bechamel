@@ -48,14 +48,6 @@ module Bus_cycles = Make (struct
   let kind = Perf.Attr.Kind.Bus_cycles
 end)
 
-module Stalled_cycles_frontend = Make (struct
-  let kind = Perf.Attr.Kind.Stalled_cycles_frontend
-end)
-
-module Stalled_cycles_backend = Make (struct
-  let kind = Perf.Attr.Kind.Stalled_cycles_backend
-end)
-
 module Ref_cpu_cycles = Make (struct
   let kind = Perf.Attr.Kind.Ref_cpu_cycles
 end)
@@ -105,16 +97,6 @@ open Bechamel
 module Extension = struct
   include Toolkit.Extension
 
-  let cycles = Measure.make (module Cycles)
-  let instructions = Measure.make (module Instructions)
-  let cache_references = Measure.make (module Cache_references)
-  let cache_misses = Measure.make (module Cache_misses)
-  let branch_instructions = Measure.make (module Branch_instructions)
-  let branch_misses = Measure.make (module Branch_misses)
-  let bus_cycles = Measure.make (module Bus_cycles)
-  let stalled_cycles_frontend = Measure.make (module Stalled_cycles_frontend)
-  let stalled_cycles_backend = Measure.make (module Stalled_cycles_backend)
-  let ref_cpu_cycles = Measure.make (module Ref_cpu_cycles)
   let cpu_clock = Measure.make (module Cpu_clock)
   let task_clock = Measure.make (module Task_clock)
   let page_faults = Measure.make (module Page_faults)
@@ -129,38 +111,6 @@ end
 
 module Instance = struct
   include Toolkit.Instance
-
-  let cycles = Measure.instance (module Cycles) Extension.cycles
-
-  let instructions =
-    Measure.instance (module Instructions) Extension.instructions
-
-  let cache_references =
-    Measure.instance (module Cache_references) Extension.cache_references
-
-  let cache_misses =
-    Measure.instance (module Cache_misses) Extension.cache_misses
-
-  let branch_instructions =
-    Measure.instance (module Branch_instructions) Extension.branch_instructions
-
-  let branch_misses =
-    Measure.instance (module Branch_misses) Extension.branch_misses
-
-  let bus_cycles = Measure.instance (module Bus_cycles) Extension.bus_cycles
-
-  let stalled_cycles_frontend =
-    Measure.instance
-      (module Stalled_cycles_frontend)
-      Extension.stalled_cycles_frontend
-
-  let stalled_cycles_backend =
-    Measure.instance
-      (module Stalled_cycles_backend)
-      Extension.stalled_cycles_backend
-
-  let ref_cpu_cycles =
-    Measure.instance (module Ref_cpu_cycles) Extension.ref_cpu_cycles
 
   let cpu_clock = Measure.instance (module Cpu_clock) Extension.cpu_clock
   let task_clock = Measure.instance (module Task_clock) Extension.task_clock
