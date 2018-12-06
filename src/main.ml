@@ -10,12 +10,7 @@ let nothing words =
 
 let test = Test.make_indexed ~name:"nothing" ~args:[0; 10; 100; 400] nothing
 let () = Fmt_tty.setup_std_outputs ~style_renderer:`Ansi_tty ~utf_8:true ()
-
-let colors =
-  List.fold_left
-    (fun a (k, v) -> Label.Map.add k v a)
-    Label.Map.empty
-    [(Measure.label Instance.cpu_clock, `Red); (Measure.run, `Yellow)]
+let colors = Label.Map.empty
 
 let analyze kind instances measures =
   List.map
@@ -29,7 +24,7 @@ let () =
   in
   let ransac = Analyze.ransac ~filter_outliers:false ~predictor:Measure.run in
   let results =
-    Benchmark.all
+    Benchmark.all ~run:3000
       ~quota:Benchmark.(s 1.)
       Instance.[minor_allocated; major_allocated; cpu_clock]
       test
