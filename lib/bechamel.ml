@@ -1,3 +1,5 @@
+let () = Printexc.record_backtrace true
+
 module S = S
 module Extension = Extension
 module Polytable = Polytable
