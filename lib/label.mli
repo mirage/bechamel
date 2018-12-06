@@ -6,6 +6,7 @@ module type Safe = sig
   val equal : t -> t -> bool
   val compare : t -> t -> int
   val pp : t Fmt.t
+  val to_string : t -> string
 
   module Map : Map.S with type key = t
 end
@@ -13,6 +14,7 @@ end
 val equal : t -> t -> bool
 val compare : t -> t -> int
 val pp : t Fmt.t
+val to_string : t -> string
 
 module Map : Map.S with type key = t
 

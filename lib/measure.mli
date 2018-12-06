@@ -1,3 +1,5 @@
+val labels : (string, unit) Hashtbl.t
+
 module Safe (M : S.MEASURE with type label = string) :
   S.MEASURE
   with type witness = M.witness

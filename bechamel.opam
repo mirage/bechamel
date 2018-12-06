@@ -24,4 +24,5 @@ depends: [
   "logs"
   "base-bytes"
   "base-bigarray"
+  "ocplib-json-typed"
 ]
