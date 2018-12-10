@@ -48,6 +48,14 @@ module Bus_cycles = Make (struct
   let kind = Perf.Attr.Kind.Bus_cycles
 end)
 
+module Stalled_cycles_frontend = Make (struct
+  let kind = Perf.Attr.Kind.Stalled_cycles_frontend
+end)
+
+module Stalled_cycles_backend = Make (struct
+  let kind = Perf.Attr.Kind.Stalled_cycles_backend
+end)
+
 module Ref_cpu_cycles = Make (struct
   let kind = Perf.Attr.Kind.Ref_cpu_cycles
 end)
@@ -96,6 +104,8 @@ open Bechamel
 
 module Extension = struct
   include Toolkit.Extension
+
+  (* XXX(dinosaure): only software measures. *)
 
   let cpu_clock = Measure.make (module Cpu_clock)
   let task_clock = Measure.make (module Task_clock)
