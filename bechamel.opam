@@ -25,4 +25,5 @@ depends: [
   "base-bytes"
   "base-bigarray"
   "ocplib-json-typed"
+  "jsonm"
 ]
