@@ -55,14 +55,18 @@ let kind_to_string = function
 let pp_kind ppf kind = Fmt.string ppf (kind_to_string kind)
 
 let kind_to_int = function
-  | `Realtime -> 0
-  | `Monotonic -> 1
-  | `Realtime_coarse -> 2
-  | `Monotonic_coarse -> 3
-  | `Monotonic_raw -> 4
-  | `Boot_time -> 5
-  | `Process_cpu_time -> 6
-  | `Thread_cpu_time -> 7
+  | `Realtime -> realtime
+  | `Monotonic -> monotonic
+  | `Realtime_coarse -> realtime_coarse
+  | `Monotonic_coarse -> monotonic_coarse
+  | `Monotonic_raw -> monotonic_raw
+  | `Boot_time -> boot_time
+  | `Process_cpu_time -> (match process_cpu_time with
+      | Some x -> x
+      | None -> Fmt.invalid_arg "Clock_linux.kind_to_int")
+  | `Thread_cpu_time -> (match thread_cpu_time with
+      | Some x -> x
+      | None -> Fmt.invalid_arg "Clock_linux.kind_to_int")
 
 let string_to_kind = function
   | "realtime" -> `Realtime
@@ -75,16 +79,16 @@ let string_to_kind = function
   | "thread-cpu-time" -> `Thread_cpu_time
   | x -> Fmt.invalid_arg "Clock_linux.string_to_kind: %s" x
 
-let int_to_kind = function
-  | 0 -> `Realtime
-  | 1 -> `Monotonic
-  | 2 -> `Realtime_coarse
-  | 3 -> `Monotonic_coarse
-  | 4 -> `Monotonic_raw
-  | 5 -> `Boot_time
-  | 6 -> `Process_cpu_time
-  | 7 -> `Thread_cpu_time
-  | x -> Fmt.invalid_arg "Clock_linux.int_to_kind: %d" x
+let int_to_kind x =
+  if x = realtime then `Realtime
+  else if x = monotonic then `Monotonic
+  else if x = realtime_coarse then `Realtime_coarse
+  else if x = monotonic_coarse then `Monotonic_coarse
+  else if x = monotonic_raw then `Monotonic_raw
+  else if x = boot_time then `Boot_time
+  else if Some x = process_cpu_time then `Process_cpu_time
+  else if Some x = thread_cpu_time then `Thread_cpu_time
+  else Fmt.invalid_arg "Clock_linux.int_to_kind: %d" x
 
 let max = 8
 
