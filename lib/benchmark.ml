@@ -48,7 +48,7 @@ let s = to_span 1.
 let default_quota = us 250.
 
 let exceeded_allowed_time allowed_time_span t =
-  let t' = Mtime.of_uint64_ns (Clock.get `Monotonic) in
+  let t' = Mtime.of_uint64_ns (Clock.get ()) in
   Mtime.(Span.compare (span t' t) allowed_time_span > 0)
 
 let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
@@ -126,7 +126,7 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
       measures
     |> unzip
   in
-  let init_time = Mtime.of_uint64_ns (Clock.get `Monotonic) in
+  let init_time = Mtime.of_uint64_ns (Clock.get ()) in
   while
     (not (exceeded_allowed_time quota init_time))
     && !idx < Array.length measurement_raw
@@ -204,7 +204,7 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
 let run_loop ~sampling n test =
   let (Test.V fn) = Test.Elt.fn test in
   let fn = fn `Init in
-  let t0 = Mtime.of_uint64_ns (Clock.get `Monotonic) in
+  let t0 = Mtime.of_uint64_ns (Clock.get ()) in
   let run = ref 0 in
   for _ = 1 to n do
     let current_run = !run in
@@ -222,7 +222,7 @@ let run_loop ~sampling n test =
     in
     run := next
   done ;
-  let t1 = Mtime.of_uint64_ns (Clock.get `Monotonic) in
+  let t1 = Mtime.of_uint64_ns (Clock.get ()) in
   Mtime.span t0 t1
 
 let _null_loop ~sampling n =
