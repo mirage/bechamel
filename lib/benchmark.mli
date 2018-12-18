@@ -28,4 +28,4 @@ val all :
   -> ?quota:Mtime.span
   -> Measure.Extension.t list
   -> Test.t
-  -> Measurement_raw.t array list
+  -> (string, Measurement_raw.t array) Hashtbl.t

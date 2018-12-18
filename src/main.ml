@@ -1,7 +1,7 @@
 let () = Printexc.record_backtrace true
 
-open Toolkit
 open Bechamel
+open Toolkit
 
 let nothing words =
   Staged.stage (fun () ->
@@ -9,34 +9,33 @@ let nothing words =
       ignore (go ((words / 3) + 1) []) )
 
 let test = Test.make_indexed ~name:"nothing" ~args:[0; 10; 100; 400] nothing
-let () = Fmt_tty.setup_std_outputs ~style_renderer:`Ansi_tty ~utf_8:true ()
-let colors = Label.Map.empty
 
-let analyze kind instances measures =
-  List.map
-    (fun label ->
-      List.map (Analyze.analyze kind (Measure.label label)) measures )
-    instances
+let dictionary value =
+  let open Json_encoding in
+  assoc value
 
 let () =
-  let ols =
-    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[|run|]
-  in
+  let ols = Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[|run|] in
   let ransac = Analyze.ransac ~filter_outliers:false ~predictor:Measure.run in
-  let results =
+  let instances = Instance.[minor_allocated; major_allocated; monotonic_clock] in
+  let ols, ransac =
     Benchmark.all ~run:3000
       ~quota:Benchmark.(s 1.)
-      Instance.[minor_allocated; major_allocated; cpu_clock]
+      instances
       test
-    |> fun m ->
-    let instances = Instance.[minor_allocated; major_allocated; cpu_clock] in
-    let ols = analyze ols instances m in
-    let ransac = analyze ransac instances m in
-    (ols, ransac)
-  in
-  Fmt.pr "%a.\n%!"
-    Fmt.(
-      Dump.pair
-        (Dump.list (Dump.list Analyze.OLS.(pp ~colors)))
-        (Dump.list (Dump.list Analyze.RANSAC.(pp ~colors))))
-    results
+    |> fun results ->
+    let ols = Analyze.all ols Instance.monotonic_clock results in
+    let ransac = Analyze.all ransac Instance.monotonic_clock results in
+    (ols, ransac) in
+  let ols_results = open_out "ols-results.json" in
+  let ols_json =
+    Json_encoding.construct (dictionary Analyze.OLS.Json.witness)
+      (Hashtbl.fold (fun name o acc -> (name, o) :: acc) ols []) in
+  let ransac_results = open_out "ransac-results.json" in
+  let ransac_json =
+    Json_encoding.construct (dictionary Analyze.RANSAC.Json.witness)
+      (Hashtbl.fold (fun name o acc -> (name, o) :: acc) ransac []) in
+  Ezjsonm.to_channel ols_results (Ezjsonm.wrap ols_json) ;
+  Ezjsonm.to_channel ransac_results (Ezjsonm.wrap ransac_json) ;
+  ()
+

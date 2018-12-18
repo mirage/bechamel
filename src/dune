@@ -1,4 +1,4 @@
 (executable
  (name main)
  (modules main)
- (libraries bechamel.perf fmt.tty bechamel))
+ (libraries ezjsonm bechamel))

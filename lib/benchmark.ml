@@ -264,11 +264,18 @@ let estimate ~sampling bmin bmax fn =
   in
   loop ~previous_iter:1 1
 
+let zip l1 l2 =
+  let rec go acc a b = match a, b with
+    | [], [] -> List.rev acc
+    | x0 :: r0, x1 :: r1 -> go ((x0, x1) :: acc) r0 r1
+    | _, _ -> Fmt.invalid_arg "zip" in
+  go [] l1 l2
+
 let all ?(start = 0) ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota
     measures test =
   Logs.debug (fun f -> f "Start to benchmark %s." (Test.name test)) ;
   let tests = Test.set test in
-  List.map
+  let results = List.map
     (fun test ->
       let quota, iter =
         match (quota, iter) with
@@ -287,4 +294,7 @@ let all ?(start = 0) ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota
           f "Start to run %s (run: %d, quota: %a)." (Test.Elt.name test) iter
             Mtime.Span.pp quota ) ;
       run ~start ~sampling ?stabilize ~quota iter measures test )
-    tests
+    tests in
+  let tbl = Hashtbl.create 16 in
+  List.iter (fun (test, result) -> Hashtbl.add tbl (Test.Elt.name test) result) (zip tests results) ;
+  tbl

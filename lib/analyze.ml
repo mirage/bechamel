@@ -417,10 +417,17 @@ type 'a t =
 let ols ~r_square ~bootstrap ~predictors = OLS {predictors; r_square; bootstrap}
 let ransac ~filter_outliers ~predictor = RANSAC {filter_outliers; predictor}
 
-let analyze : type a. a t -> Label.t -> Measurement_raw.t array -> a =
- fun kind label m ->
+let one : type a. a t -> Measure.Extension.t -> Measurement_raw.t array -> a =
+ fun kind e m ->
+  let label = Measure.label e in
   match kind with
   | OLS {predictors; r_square; bootstrap} ->
       OLS.ols ~bootstrap ~r_square ~predictors ~responder:label m
   | RANSAC {filter_outliers; predictor} ->
       RANSAC.ransac ~filter_outliers ~predictor ~responder:label m
+
+let all : type a. a t -> Measure.Extension.t -> (string, Measurement_raw.t array) Hashtbl.t -> (string, a) Hashtbl.t =
+  fun kind e ms ->
+    let ret = Hashtbl.create (Hashtbl.length ms) in
+    Hashtbl.iter (fun name m -> Hashtbl.add ret name (one kind e m)) ms ;
+    ret

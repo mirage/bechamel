@@ -35,6 +35,7 @@ let make_indexed ~name ?(fmt : fmt_indexed = "%s:%d") ~args fn =
         args }
 
 let name {name; _} = name
+let names {set; _ } = List.map Elt.name set
 let set {set; _} = set
 let expand ts = List.concat (List.map (fun t -> t.set) ts)
 
