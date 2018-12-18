@@ -33,6 +33,43 @@ module OLS = struct
   and v =
     {estimates: float array; ci95: Ci95.t array option; r_square: float option}
 
+  module Json = struct
+    let witness =
+      let open Json_encoding in
+      let label = conv Label.to_string Label.of_string string in
+      let estimates = req "estimates" (array float) in
+      let ci95 =
+        conv
+          (fun { Ci95.r; l; } -> (r, l))
+          (fun (r, l) -> { Ci95.r; l; })
+          (tup2 float float) in
+      let ci95 = opt "ci95" (array ci95) in
+      let r_square = opt "r-square" float in
+      let v =
+        conv
+          (fun { estimates; ci95; r_square; } -> (estimates, ci95, r_square))
+          (fun (estimates, ci95, r_square) -> { estimates; ci95; r_square; })
+          (obj3 estimates ci95 r_square) in
+      let predictors = req "predictors" (array label) in
+      let responder = req "responder" label in
+      let result ok error =
+        let case_ok = case ok (function Ok v -> Some v | _ -> None) (fun v -> Ok v) in
+        let case_error = case error (function Error v -> Some v | _ -> None) (fun v -> Error v) in
+        union [ case_ok; case_error; ] in
+      let msg = conv (fun (`Msg err) -> err) (fun err -> `Msg err) string in
+      let value = req "value" (result v msg) in
+      conv
+        (fun { predictors; responder; value; } -> (predictors, responder, value))
+        (fun (predictors, responder, value) -> { predictors; responder; value; })
+        (obj3 predictors responder value)
+
+    let construct = Json_encoding.construct witness
+    let deconstruct json =
+      match Json_encoding.destruct witness json with
+      | v -> Ok v
+      | exception Invalid_argument msg -> Rresult.R.error_msg msg
+  end
+
   let r_square m ~responder ~predictors r =
     let predictors_matrix, responder_vector =
       make_lr_inputs ~responder ~predictors m
@@ -276,6 +313,30 @@ module RANSAC = struct
     ; max_value: float * float
     ; min_value: float * float
     ; standard_error: float }
+
+  module Json = struct
+    let witness =
+      let open Json_encoding in
+      let label = conv Label.to_string Label.of_string string in
+      let predictor = req "predictor" label in
+      let responder = req "responder" label in
+      let mean = req "mean" float in
+      let constant = req "constant" float in
+      let max_value = req "max" (tup2 float float) in
+      let min_value = req "min" (tup2 float float) in
+      let standard_error = req "error" float in
+      conv
+        (fun { predictor; responder; mean_value; constant; max_value; min_value; standard_error; } ->
+           (predictor, responder, mean_value, constant, max_value, min_value, standard_error))
+        (fun (predictor, responder, mean_value, constant, max_value, min_value, standard_error) ->
+           { predictor; responder; mean_value; constant; max_value; min_value; standard_error; })
+        (obj7 predictor responder mean constant max_value min_value standard_error)
+
+    let construct = Json_encoding.construct witness
+    let deconstruct json = match Json_encoding.destruct witness json with
+      | v -> Ok v
+      | exception Invalid_argument msg -> Rresult.R.error_msg msg
+  end
 
   let pp ?(colors = Label.Map.empty) ppf t =
     let style_responder =

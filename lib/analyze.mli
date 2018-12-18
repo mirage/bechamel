@@ -9,6 +9,12 @@ module OLS : sig
     -> Measurement_raw.t array
     -> t
 
+  module Json : sig
+    val witness : t Json_encoding.encoding
+    val construct : t -> Json_repr.ezjsonm
+    val deconstruct : Json_repr.ezjsonm -> (t, Rresult.R.msg) result
+  end
+
   val pp : ?colors:Fmt.style Label.Map.t -> t Fmt.t
   val predictors : t -> Label.t list
   val responder : t -> Label.t
@@ -25,6 +31,12 @@ module RANSAC : sig
     -> responder:Label.t
     -> Measurement_raw.t array
     -> t
+
+  module Json : sig
+    val witness : t Json_encoding.encoding
+    val construct : t -> Json_repr.ezjsonm
+    val deconstruct : Json_repr.ezjsonm -> (t, Rresult.R.msg) result
+  end
 
   val pp : ?colors:Fmt.style Label.Map.t -> t Fmt.t
   val responder : t -> Label.t

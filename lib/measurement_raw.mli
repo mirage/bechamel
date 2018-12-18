@@ -5,6 +5,7 @@ val make : measures:float array -> labels:Label.t array -> float -> t
 module Map : Map.S with type key = string
 
 module Json : sig
+  val witness : t Json_encoding.encoding
   val construct : t -> Json_repr.ezjsonm
   val deconstruct : Json_repr.ezjsonm -> (t, Rresult.R.msg) result
 end
