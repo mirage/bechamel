@@ -66,9 +66,9 @@ let pp ?(colors = Map.empty) ppf x =
   Fmt.pf ppf "{ @[<hov>run = %f;@ " x.run ;
   for i = 0 to Array.length x.labels - 1 do
     let style =
-      match Map.find_opt (x.labels.(i) :> string) colors with
-      | Some x -> x
-      | None -> `None
+      match Map.find (x.labels.(i) :> string) colors with
+      | x -> x
+      | exception Not_found -> `None
     in
     Fmt.pf ppf "%s = %a;@ "
       (x.labels.(i) :> string)

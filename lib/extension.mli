@@ -1,4 +1,5 @@
 module Make (Functor : S.FUNCTOR) : sig
+  (* XXX(dinosaure): only on [>= 4.06.0] *)
   type t = private ..
 
   module type Extension = sig

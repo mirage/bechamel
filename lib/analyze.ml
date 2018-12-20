@@ -12,7 +12,7 @@ module OLS = struct
       let low, high = abs_err t ~estimate in
       (low /. estimate, high /. estimate)
 
-    let bad = {r= Float.neg_infinity; l= Float.neg_infinity}
+    let bad = {r= neg_infinity; l= neg_infinity}
   end
 
   (* Linear regression inputs *)
@@ -121,7 +121,7 @@ module OLS = struct
   let quantile_of_array arr ?(failures = 0) ~len ~low ~high =
     Array.sort (compare : float -> float -> int) arr ;
     let index q = int_of_float ((float len *. q) +. (0.5 *. float failures)) in
-    let extended_get i = if i >= len then Float.infinity else arr.(i) in
+    let extended_get i = if i >= len then infinity else arr.(i) in
     let l = extended_get ((min : int -> int -> int) (index low) (len - 1)) in
     let r = extended_get ((max : int -> int -> int) (index high) failures) in
     Ci95.{l; r}
@@ -145,7 +145,7 @@ module OLS = struct
           | _ ->
               incr bootstrap_fails ;
               for p = 0 to p - 1 do
-                bootstrap_coeffs.(p).(i) <- Float.neg_infinity
+                bootstrap_coeffs.(p).(i) <- neg_infinity
               done
         done ;
         Array.init p (fun i ->
