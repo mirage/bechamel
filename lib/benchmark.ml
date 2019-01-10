@@ -145,7 +145,7 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
       measures ;
     Array.iter apply read_0 ;
     for _ = 1 to current_run do
-      ignore (fn ())
+      ignore (Sys.opaque_identity (fn ()))
     done ;
     Array.iter apply read_1 ;
     Array.iter
