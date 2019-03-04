@@ -1,4 +1,4 @@
 (executable
  (name main)
  (modules main)
- (libraries ezjsonm bechamel))
+ (libraries ezjsonm bechamel bechamel.notty notty.unix))

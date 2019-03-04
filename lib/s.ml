@@ -35,4 +35,6 @@ module type MEASURE = sig
 
   val blit : witness -> value -> unit
   (** [blit w v] permits to store measure on [v] with witness [w]. *)
+
+  val compare : value -> value -> int
 end

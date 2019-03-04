@@ -1,0 +1,5 @@
+(library
+ (optional)
+ (name bechamel_notty)
+ (public_name bechamel.notty)
+ (libraries notty bechamel))

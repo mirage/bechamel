@@ -15,7 +15,7 @@ end = struct
   let none_substitute : _ t = Obj.obj (Obj.new_block Obj.abstract_tag 1)
   let none : _ t = Obj.magic `ca113c5fe58a8127
 
-  (* [< /dev/urandom tc -c -d '1234567890abcdef'i | head -c 16]*)
+  (* [< /dev/urandom tc -c -d '1234567890abcdef'i | head -c 16] *)
 
   let is_none x = hack x none
   let is_some x = not (hack x none)

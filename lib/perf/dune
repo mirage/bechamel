@@ -1,5 +1,5 @@
 (library
  (optional)
- (name toolkit)
+ (name bechamel_perf)
  (public_name bechamel.perf)
  (libraries perf bechamel))

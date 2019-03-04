@@ -18,6 +18,7 @@ struct
   let diff a b = {contents= Int64.sub !b !a}
   let epsilon () = {contents= 0L}
   let blit witness v = v := Perf.read witness
+  let compare a b = Int64.compare !a !b
 end
 
 module Cycles = Make (struct

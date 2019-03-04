@@ -15,6 +15,8 @@ module One = struct
 
   let epsilon () = {contents= 1}
   let blit () v = v := 1
+
+  let compare _ _ = 0
 end
 
 module Minor_allocated = struct
@@ -34,6 +36,8 @@ module Minor_allocated = struct
   let blit () v =
     stat := Gc.quick_stat () ;
     v := !stat.minor_words
+
+  let compare a b = (compare : float -> float -> int) !a !b
 end
 
 module Major_allocated = struct
@@ -53,6 +57,8 @@ module Major_allocated = struct
   let blit () v =
     stat := Gc.quick_stat () ;
     v := !stat.major_words
+
+  let compare a b = (compare : float -> float -> int) !a !b
 end
 
 module Promoted = struct
@@ -72,6 +78,8 @@ module Promoted = struct
   let blit () v =
     stat := Gc.quick_stat () ;
     v := !stat.promoted_words
+
+  let compare a b = (compare : float -> float -> int) !a !b
 end
 
 module Compaction = struct
@@ -91,6 +99,8 @@ module Compaction = struct
   let blit () v =
     stat := Gc.quick_stat () ;
     v := !stat.compactions
+
+  let compare a b = (compare : int -> int -> int) !a !b
 end
 
 module Minor_collection = struct
@@ -110,6 +120,8 @@ module Minor_collection = struct
   let blit () v =
     stat := Gc.quick_stat () ;
     v := !stat.minor_collections
+
+  let compare a b = (compare : int -> int -> int) !a !b
 end
 
 module Major_collection = struct
@@ -129,6 +141,8 @@ module Major_collection = struct
   let blit () v =
     stat := Gc.quick_stat () ;
     v := !stat.major_collections
+
+  let compare a b = (compare : int -> int -> int) !a !b
 end
 
 module Monotonic_clock = struct
@@ -144,6 +158,8 @@ module Monotonic_clock = struct
   let epsilon () = {contents=0L}
   let label _witness = "monotonic-clock"
   let blit _witness v = v := Clock.get ()
+
+  let compare a b = Int64.compare !a !b
 end
 
 module Extension = struct

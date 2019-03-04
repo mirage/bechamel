@@ -431,3 +431,10 @@ let all : type a. a t -> Measure.Extension.t -> (string, Measurement_raw.t array
     let ret = Hashtbl.create (Hashtbl.length ms) in
     Hashtbl.iter (fun name m -> Hashtbl.add ret name (one kind e m)) ms ;
     ret
+
+let merge : type a. a t -> Measure.Extension.t list -> (string, a) Hashtbl.t list -> (Label.t, (string, a) Hashtbl.t) Hashtbl.t =
+  fun _ instances results ->
+  let ret = Hashtbl.create (List.length instances) in
+  List.iter2
+    (fun instance result -> Hashtbl.add ret (Measure.label instance) result)
+    instances results ; ret

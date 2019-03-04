@@ -54,3 +54,4 @@ val ols : r_square:bool -> bootstrap:int -> predictors:Label.t array -> OLS.t t
 val ransac : filter_outliers:bool -> predictor:Label.t -> RANSAC.t t
 val one : 'a t -> Measure.Extension.t -> Measurement_raw.t array -> 'a
 val all : 'a t -> Measure.Extension.t -> (string, Measurement_raw.t array) Hashtbl.t -> (string, 'a) Hashtbl.t
+val merge : 'a t -> Measure.Extension.t list -> (string, 'a) Hashtbl.t list -> (Label.t, (string, 'a) Hashtbl.t) Hashtbl.t

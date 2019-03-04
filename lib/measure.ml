@@ -27,6 +27,7 @@ module Safe (M : S.MEASURE with type label = string) :
   let label witness = Label.of_string (M.label witness)
   let epsilon () = M.epsilon ()
   let blit witness value = M.blit witness value
+  let compare a b = M.compare a b
 end
 
 module type UNSAFE = S.MEASURE with type label = string

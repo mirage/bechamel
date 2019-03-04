@@ -75,6 +75,7 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
 
     let epsilon () = run
     let blit () v = v := !run
+    let compare a b = !a - !b
   end in
   let module RunMaker = Measure.Switch.Measure (Run) in
   let measure_run = RunMaker.x in
