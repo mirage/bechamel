@@ -1,6 +1,8 @@
 Bechamel - Agnostic benchmark tool in OCaml
 -------------------------------------------
 
+![output](https://raw.githubusercontent.com/dinosaure/bechamel/img/output0.png)
+
 Bechamel is a toolkit to do a _micro_-benchmarking on your functions. It able to
 be extended with your measures. Indeed, Bechamel provides only GC measures.
 Then, from your target, you can choose to use `perf` (see binary example) or
