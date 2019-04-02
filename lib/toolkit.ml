@@ -157,7 +157,7 @@ module Monotonic_clock = struct
   let diff a b = {contents = Int64.sub !b !a}
   let epsilon () = {contents=0L}
   let label _witness = "monotonic-clock"
-  let blit _witness v = v := Clock.get ()
+  let blit _witness v = v := Mtime_clock.now_ns ()
 
   let compare a b = Int64.compare !a !b
 end

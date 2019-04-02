@@ -1,4 +1,4 @@
 (library
  (name bechamel)
  (public_name bechamel)
- (libraries ocplib-json-typed jsonm fmt rresult logs mtime clock))
+ (libraries mtime.clock.os ocplib-json-typed jsonm fmt rresult logs mtime clock))
