@@ -1,17 +1,17 @@
 let unzip t =
   let a =
     Array.init (Array.length t) (fun i ->
-        let x, _, _ = Array.unsafe_get t i in
+        let x, _, _ = Array.get t i in
         x )
   in
   let b =
     Array.init (Array.length t) (fun i ->
-        let _, x, _ = Array.unsafe_get t i in
+        let _, x, _ = Array.get t i in
         x )
   in
   let c =
     Array.init (Array.length t) (fun i ->
-        let _, _, x = Array.unsafe_get t i in
+        let _, _, x = Array.get t i in
         x )
   in
   (a, b, c)
@@ -50,6 +50,9 @@ let default_quota = us 250.
 let exceeded_allowed_time allowed_time_span t =
   let t' = Mtime.of_uint64_ns (Clock.get ()) in
   Mtime.(Span.compare (span t' t) allowed_time_span > 0)
+
+let runnable f i =
+  for _ = 1 to i do ignore @@ Sys.opaque_identity (f ()) done [@@inline]
 
 let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
     ?(quota = default_quota) iter measures test =
@@ -116,7 +119,7 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
         let value = Measure.Switch.to_value m in
         let key = Polytable.Key.create value in
         let (Measure.Switch.Value (module V)) = value in
-        Polytable.add store_0 key (snd instance) ;
+        Polytable.add store_0 key (V.epsilon ()) ;
         (* allocate values *)
         Polytable.add store_1 key (V.epsilon ()) ;
         (* allocate values *)
@@ -145,9 +148,9 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
         Measure.load witness )
       measures ;
     Array.iter apply read_0 ;
-    for _ = 1 to current_run do
-      ignore (Sys.opaque_identity (fn ()))
-    done ;
+
+    runnable fn current_run ;
+
     Array.iter apply read_1 ;
     Array.iter
       (fun x ->
