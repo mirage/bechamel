@@ -11,6 +11,10 @@ end
 
 type 'a type_identifier = (module TypeIdentifier with type t = 'a)
 
+module Option = struct
+  let is_some = function Some _ -> true | None -> false
+end
+
 module Refl = struct
   type ('a, 'b) t = Refl : ('a, 'a) t
 
@@ -31,15 +35,6 @@ let type_identifier (type a) () =
     type t = a type _ TypeIdentifier.t += T : t TypeIdentifier.t
   end in
   (module M : TypeIdentifier with type t = a)
-
-(* specialization: polymorphic compiler primitives can't be aliases as this
-   does not play well with inlining - if aliased without a type annotation, the
-   compiler would implement them using the generic code doing a C call, and
-   it's this code that would be inlined - as a result we have to copy the
-   declaration here. *)
-external greaterequal : 'a -> 'a -> bool = "%greaterequal"
-
-let greaterequal (x : int) y = greaterequal x y
 
 module Make (Functor : S.FUNCTOR) = struct
   module Key = struct
@@ -67,37 +62,38 @@ module Make (Functor : S.FUNCTOR) = struct
 
   type 'a key = 'a Key.key
   type binding = B : 'a key * 'a -> binding
-  type t = {contents: binding Option_array.t; len: int}
+  type t = {contents: binding option array; len: int}
 
-  let create ~len = {contents= Option_array.create ~len; len}
-  let mem t k = Option_array.is_some t.contents k.Key.uid
+  let create ~len = {contents= Array.make len None; len}
+  let mem t k = Option.is_some t.contents.(k.Key.uid)
 
   let add : t -> 'a key -> 'a -> unit =
    fun t k v ->
     if k.Key.uid >= t.len then invalid_arg "Polytable.add"
-    else Option_array.set_some t.contents k.Key.uid (B (k, v))
+    else t.contents.(k.Key.uid) <- (Some (B (k, v)))
 
   let unit = ()
 
   let set : type a. t -> a key -> (a -> unit) -> unit =
    fun t k f ->
-    if greaterequal k.Key.uid t.len then unit
+    if k.Key.uid >= t.len then unit
     else
-      match Option_array.get_some_exn t.contents k.Key.uid
-      with B (k', v) -> (
-        match Refl.eq k.Key.tid k'.Key.tid with
-        | Some Refl.Refl -> f v
-        | None -> unit )
+      match t.contents.(k.Key.uid)
+      with None -> assert false
+         | Some (B (k', v)) -> (
+             match Refl.eq k.Key.tid k'.Key.tid with
+             | Some Refl.Refl -> f v
+             | None -> unit )
 
   let rem : t -> 'a key -> unit =
    fun t k ->
-    if k.Key.uid < t.len then Option_array.set_none t.contents k.Key.uid
+    if k.Key.uid < t.len then t.contents.(k.Key.uid) <- None
 
   let find : type a. t -> a key -> a option =
    fun t k ->
     if k.Key.uid >= t.len then None
     else
-      match Option_array.get t.contents k.Key.uid with
+      match t.contents.(k.Key.uid) with
       | None -> None
       | Some (B (k', v)) -> (
         match Refl.eq k.Key.tid k'.Key.tid with
