@@ -14,3 +14,4 @@ val run : t -> float
 val get_index : label:Label.t -> t -> int
 val get : label:Label.t -> t -> float
 val pp : ?colors:Fmt.style Map.t -> t Fmt.t
+val exists : label:Label.t -> t -> bool

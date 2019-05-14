@@ -1,17 +1,9 @@
-[@@@warning "-32-34"]
-
 module OLS = struct
   module Ci95 = struct
     (* 95% confidence interval *)
     type t = {r: float; l: float}
 
     let pp ppf x = Fmt.pf ppf "@[<hov>%f to %f@]" x.r x.l
-    let abs_err t ~estimate = (t.l -. estimate, t.r -. estimate)
-
-    let rel_err t ~estimate =
-      let low, high = abs_err t ~estimate in
-      (low /. estimate, high /. estimate)
-
     let bad = {r= neg_infinity; l= neg_infinity}
   end
 

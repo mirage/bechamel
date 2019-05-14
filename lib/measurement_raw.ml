@@ -17,6 +17,15 @@ let get_index ~label m =
     raise Not_found
   with Find -> !i0
 
+let exists ~label m =
+  if Label.equal label Measure.run
+  then true
+  else
+    let yes = ref false in
+    for i = 0 to Array.length m.labels - 1
+    do if Label.equal m.labels.(i) label then yes := true done ;
+    !yes
+
 let run t = t.run
 
 let get ~label m =
