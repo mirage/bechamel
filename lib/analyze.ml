@@ -25,43 +25,6 @@ module OLS = struct
   and v =
     {estimates: float array; ci95: Ci95.t array option; r_square: float option}
 
-  module Json = struct
-    let witness =
-      let open Json_encoding in
-      let label = conv Label.to_string Label.of_string string in
-      let estimates = req "estimates" (array float) in
-      let ci95 =
-        conv
-          (fun { Ci95.r; l; } -> (r, l))
-          (fun (r, l) -> { Ci95.r; l; })
-          (tup2 float float) in
-      let ci95 = opt "ci95" (array ci95) in
-      let r_square = opt "r-square" float in
-      let v =
-        conv
-          (fun { estimates; ci95; r_square; } -> (estimates, ci95, r_square))
-          (fun (estimates, ci95, r_square) -> { estimates; ci95; r_square; })
-          (obj3 estimates ci95 r_square) in
-      let predictors = req "predictors" (array label) in
-      let responder = req "responder" label in
-      let result ok error =
-        let case_ok = case ok (function Ok v -> Some v | _ -> None) (fun v -> Ok v) in
-        let case_error = case error (function Error v -> Some v | _ -> None) (fun v -> Error v) in
-        union [ case_ok; case_error; ] in
-      let msg = conv (fun (`Msg err) -> err) (fun err -> `Msg err) string in
-      let value = req "value" (result v msg) in
-      conv
-        (fun { predictors; responder; value; } -> (predictors, responder, value))
-        (fun (predictors, responder, value) -> { predictors; responder; value; })
-        (obj3 predictors responder value)
-
-    let construct = Json_encoding.construct witness
-    let deconstruct json =
-      match Json_encoding.destruct witness json with
-      | v -> Ok v
-      | exception Invalid_argument msg -> Rresult.R.error_msg msg
-  end
-
   let r_square m ~responder ~predictors r =
     let predictors_matrix, responder_vector =
       make_lr_inputs ~responder ~predictors m
@@ -165,43 +128,23 @@ module OLS = struct
         {predictors; responder; value= Ok {estimates; ci95; r_square}}
     | Error _ as err -> {predictors; responder; value= err}
 
-  let style_by_r_square = function
-    | Some r_square ->
-        if r_square >= 0.95 then `Green
-        else if r_square >= 0.90 then `Yellow
-        else `Red
-    | None -> `None
-
-  let pp ~predictors ~responder ?(colors = Label.Map.empty) ppf v =
+  let pp ~predictors ~responder ppf v =
     Fmt.pf ppf "{ @[" ;
-    let style_responder =
-      match Label.Map.find_opt responder colors with
-      | Some x -> x
-      | None -> `None
-    in
     for i = 0 to Array.length predictors - 1 do
-      let style_label =
-        match Label.Map.find_opt predictors.(i) colors with
-        | Some x -> x
-        | None -> `None
-      in
-      Fmt.pf ppf "%a per %a = %a"
-        Fmt.(styled style_responder Label.pp)
-        responder
-        Fmt.(styled style_label Label.pp)
-        predictors.(i)
-        Fmt.(styled (style_by_r_square v.r_square) float)
+      Fmt.pf ppf "%a per %a = %f"
+        Label.pp responder
+        Label.pp predictors.(i)
         v.estimates.(i) ;
-      ( match v.ci95 with
-      | Some ci95 -> Fmt.pf ppf " (confidence: %a)" Ci95.pp ci95.(i)
-      | None -> () ) ;
+      (match v.ci95 with
+       | Some ci95 -> Fmt.pf ppf " (confidence: %a)" Ci95.pp ci95.(i)
+       | None -> ()) ;
       Fmt.pf ppf ";@ "
     done ;
-    Fmt.pf ppf "r-square = %a@] }" Fmt.(Dump.option float) v.r_square
+    Fmt.pf ppf "r² = %a@] }" Fmt.(Dump.option float) v.r_square
 
-  let pp ?colors ppf x =
+  let pp ppf x =
     match x.value with
-    | Ok v -> pp ~predictors:x.predictors ~responder:x.responder ?colors ppf v
+    | Ok v -> pp ~predictors:x.predictors ~responder:x.responder ppf v
     | Error err -> Rresult.R.pp_msg ppf err
 
   let predictors {predictors; _} = Array.to_list predictors
@@ -306,46 +249,10 @@ module RANSAC = struct
     ; min_value: float * float
     ; standard_error: float }
 
-  module Json = struct
-    let witness =
-      let open Json_encoding in
-      let label = conv Label.to_string Label.of_string string in
-      let predictor = req "predictor" label in
-      let responder = req "responder" label in
-      let mean = req "mean" float in
-      let constant = req "constant" float in
-      let max_value = req "max" (tup2 float float) in
-      let min_value = req "min" (tup2 float float) in
-      let standard_error = req "error" float in
-      conv
-        (fun { predictor; responder; mean_value; constant; max_value; min_value; standard_error; } ->
-           (predictor, responder, mean_value, constant, max_value, min_value, standard_error))
-        (fun (predictor, responder, mean_value, constant, max_value, min_value, standard_error) ->
-           { predictor; responder; mean_value; constant; max_value; min_value; standard_error; })
-        (obj7 predictor responder mean constant max_value min_value standard_error)
-
-    let construct = Json_encoding.construct witness
-    let deconstruct json = match Json_encoding.destruct witness json with
-      | v -> Ok v
-      | exception Invalid_argument msg -> Rresult.R.error_msg msg
-  end
-
-  let pp ?(colors = Label.Map.empty) ppf t =
-    let style_responder =
-      match Label.Map.find_opt t.responder colors with
-      | Some style -> style
-      | None -> `None
-    in
-    let style_predictor =
-      match Label.Map.find_opt t.predictor colors with
-      | Some style -> style
-      | None -> `None
-    in
+  let pp ppf t =
     Fmt.pf ppf "{ @[<hov>%a per %a = %f;@ standard-error = %f;@] }"
-      (Fmt.styled style_responder Label.pp)
-      t.responder
-      (Fmt.styled style_predictor Label.pp)
-      t.predictor t.mean_value t.standard_error
+      Label.pp t.responder
+      Label.pp t.predictor t.mean_value t.standard_error
 
   let result_column ~predictor ~responder m =
     ( Measurement_raw.get ~label:predictor m
@@ -409,8 +316,8 @@ type 'a t =
 let ols ~r_square ~bootstrap ~predictors = OLS {predictors; r_square; bootstrap}
 let ransac ~filter_outliers ~predictor = RANSAC {filter_outliers; predictor}
 
-let one : type a. a t -> Measure.Extension.t -> Measurement_raw.t array -> a =
- fun kind e m ->
+let one : type a. a t -> Measure.Extension.t -> Benchmark.stats * Measurement_raw.t array -> a =
+ fun kind e (_, m) ->
   let label = Measure.label e in
   match kind with
   | OLS {predictors; r_square; bootstrap} ->
@@ -418,7 +325,7 @@ let one : type a. a t -> Measure.Extension.t -> Measurement_raw.t array -> a =
   | RANSAC {filter_outliers; predictor} ->
       RANSAC.ransac ~filter_outliers ~predictor ~responder:label m
 
-let all : type a. a t -> Measure.Extension.t -> (string, Measurement_raw.t array) Hashtbl.t -> (string, a) Hashtbl.t =
+let all : type a. a t -> Measure.Extension.t -> (string, Benchmark.stats * Measurement_raw.t array) Hashtbl.t -> (string, a) Hashtbl.t =
   fun kind e ms ->
     let ret = Hashtbl.create (Hashtbl.length ms) in
     Hashtbl.iter (fun name m -> Hashtbl.add ret name (one kind e m)) ms ;

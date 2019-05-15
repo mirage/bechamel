@@ -9,23 +9,27 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 
-CAMLprim value
-clock_mach_get_time(value unit)
-{
-  CAMLparam0();
+// (c) Daniel Bünzli
 
-#ifdef __MACH__
-  static mach_timebase_info_data_t s;
+static mach_timebase_info_data_t s = { 0 };
+
+CAMLprim value
+clock_mach_init(value vunit)
+{
+  if (mach_timebase_info (&s) != KERN_SUCCESS)
+    caml_raise_sys_error (caml_copy_string("bechamel.clock: mach_timebase_info () failed"));
+  if (s.denom == 0)
+    caml_raise_sys_error (caml_copy_string("bechamel.clock: mach_timebase_info_data.denom is 0"));
+
+  return Val_unit;
+}
+
+CAMLprim value
+clock_mach_get_time(value vunit)
+{
   uint64_t now;
 
   now = mach_absolute_time();
 
-  if (s.denom == 0)
-    (void) mach_timebase_info(&s);
-
-  CAMLreturn(copy_int64(now * s.numer / s.denom));
-#else
-  /* XXX(dinosaure): should not appear. */
-  CAMLreturn(copy_int64(0L));
-#endif
+  return caml_copy_int64(now * s.numer / s.denom);
 }

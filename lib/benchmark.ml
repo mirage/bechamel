@@ -2,22 +2,18 @@ let unzip t =
   let a =
     Array.init (Array.length t) (fun i ->
         let x, _, _ = Array.get t i in
-        x )
-  in
+        x ) in
   let b =
     Array.init (Array.length t) (fun i ->
         let _, x, _ = Array.get t i in
-        x )
-  in
+        x ) in
   let c =
     Array.init (Array.length t) (fun i ->
         let _, _, x = Array.get t i in
-        x )
-  in
+        x ) in
   (a, b, c)
 
 let src = Logs.Src.create "benchmark" ~doc:"logs benchmark's events"
-
 module Log = (val Logs.src_log src : Logs.LOG)
 
 let stabilize_garbage_collector () =
@@ -48,14 +44,28 @@ let s = to_span 1.
 let default_quota = us 250.
 
 let exceeded_allowed_time allowed_time_span t =
-  let t' = Mtime_clock.now () in
+  let t' = Mtime.of_uint64_ns (Clock.get ()) in
   Mtime.Span.compare (Mtime.span t' t) allowed_time_span > 0
 
 let runnable f i =
   for _ = 1 to i do ignore @@ Sys.opaque_identity (f ()) done [@@inline]
 
+type stats =
+  { start : int
+  ; sampling : sampling
+  ; stabilize : bool
+  ; quota : Mtime.span
+  ; run : int
+  ; instances : Label.t list
+  ; samples : int
+  ; time : Mtime.span }
+and sampling = [ `Linear of int | `Geometric of float ]
+
 let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
     ?(quota = default_quota) iter measures test =
+  let stats =
+    { start; sampling; stabilize; quota; run= iter; instances= List.map Measure.label measures
+    ; samples= 0; time= Mtime.Span.zero } in
   let idx = ref 0 in
   let run = ref start in
   let module Run = struct
@@ -130,7 +140,7 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
       measures
     |> unzip
   in
-  let init_time = Mtime_clock.now () in
+  let init_time = Mtime.of_uint64_ns (Clock.get ()) in
   while
     (not (exceeded_allowed_time quota init_time))
     && !idx < Array.length measurement_raw
@@ -183,6 +193,9 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
     run := next ;
     incr idx
   done ;
+  let final_time = Mtime.of_uint64_ns (Clock.get ()) in
+  let total = !idx in
+  let stats = { stats with samples= !idx; time= Mtime.span init_time final_time } in
   let labels =
     Array.map
       (fun x ->
@@ -194,8 +207,7 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
         Measure.label witness )
       measures
   in
-  let total = !idx in
-  Array.map
+  stats, Array.map
     (fun m ->
       let run = m.(0) in
       (* XXX(dinosaure): we put by hands [Run] extension at the begin of
@@ -203,102 +215,16 @@ let run ?(start = 0) ?(sampling = `Geometric 1.01) ?(stabilize = false)
       Measurement_raw.make run ~measures:m ~labels )
     (Array.sub measurement_raw 0 total)
 
-(* [run_loop n test] returns the elapsed time of running [n >= 0L] times
-   [test]. *)
-let run_loop ~sampling n test =
-  let (Test.V fn) = Test.Elt.fn test in
-  let fn = fn `Init in
-  let t0 = Mtime.of_uint64_ns (Clock.get ()) in
-  let run = ref 0 in
-  for _ = 1 to n do
-    let current_run = !run in
-    for _ = 1 to !run do
-      ignore (fn ())
-    done ;
-    let next =
-      match sampling with
-      | `Linear k -> current_run + k
-      | `Geometric scale ->
-          let next_geometric =
-            int_of_float (float_of_int current_run *. scale)
-          in
-          (max : int -> int -> int) next_geometric (current_run + 1)
-    in
-    run := next
-  done ;
-  let t1 = Mtime.of_uint64_ns (Clock.get ()) in
-  Mtime.span t0 t1
-
-let _null_loop ~sampling n =
-  run_loop ~sampling n
-    (Test.Elt.unsafe_make ~name:"ignore" (Staged.stage ignore))
-
-(* Run function [f] count times, return time taken (>= 0.). *)
-let time_it ~sampling n fn = run_loop ~sampling n fn
-let () = Random.self_init ()
-
-let estimate ~sampling bmin bmax fn =
-  let rec reduce ~bmin ~bmax n_min n_max =
-    Logs.debug (fun f ->
-        f
-          "reduce estimation minimal-time:%a, maximum-time:%a, \
-           minimum-run:%d, maximum-run:%d."
-          Mtime.Span.pp bmin Mtime.Span.pp bmax n_min n_max ) ;
-    let interval = n_max - n_min in
-    if interval <= 1 then n_max
-    else
-      let new_iter = Random.int (n_max - n_min) + n_min in
-      let time = time_it ~sampling new_iter fn in
-      if Mtime.Span.compare time bmax < 0 then
-        reduce ~bmin:time ~bmax new_iter n_max
-      else if Mtime.Span.compare time bmax > 0 then
-        reduce ~bmin ~bmax n_min new_iter
-      else new_iter
-  in
-  let rec loop ~previous_iter iter =
-    Logs.debug (fun f ->
-        f "estimate run:%d, previous-run:%d." iter previous_iter ) ;
-    let time = time_it ~sampling iter fn in
-    if Mtime.Span.compare time bmax < 0 then
-      loop ~previous_iter:iter (iter lsl 1)
-    else if Mtime.Span.compare time bmax > 0 then
-      reduce ~bmin:time ~bmax previous_iter iter
-    else if Mtime.Span.compare time bmin < 0 then assert false
-    else iter
-  in
-  loop ~previous_iter:1 1
-
-let zip l1 l2 =
-  let rec go acc a b = match a, b with
-    | [], [] -> List.rev acc
-    | x0 :: r0, x1 :: r1 -> go ((x0, x1) :: acc) r0 r1
-    | _, _ -> Fmt.invalid_arg "zip" in
-  go [] l1 l2
-
-let all ?(start = 0) ?(sampling = `Geometric 1.01) ?stabilize ?run:iter ?quota
+let all ?(start = 0) ?(sampling = `Geometric 1.01) ?stabilize ?run:(iter= 3000) ?(quota= default_quota)
     measures test =
   Logs.debug (fun f -> f "Start to benchmark %s." (Test.name test)) ;
-  let tests = Test.set test in
-  let results = List.map
-    (fun test ->
-      let quota, iter =
-        match (quota, iter) with
-        | Some x, None -> (x, estimate ~sampling Mtime.Span.zero x test)
-        | None, Some x ->
-            Logs.debug (fun f ->
-                f "Estimate time for %d run(s) of %s." x (Test.Elt.name test)
-            ) ;
-            (time_it ~sampling x test, x)
-        | Some quota, Some iter -> (quota, iter)
-        | None, None ->
-            let iter = estimate ~sampling Mtime.Span.zero default_quota test in
-            (time_it ~sampling iter test, iter)
-      in
-      Logs.debug (fun f ->
-          f "Start to run %s (run: %d, quota: %a)." (Test.Elt.name test) iter
-            Mtime.Span.pp quota ) ;
-      run ~start ~sampling ?stabilize ~quota iter measures test )
-    tests in
-  let tbl = Hashtbl.create 16 in
-  List.iter (fun (test, result) -> Hashtbl.add tbl (Test.Elt.name test) result) (zip tests results) ;
-  tbl
+  let tests = Array.of_list (Test.set test) in
+  let tbl = Hashtbl.create (Array.length tests) in
+  for i = 0 to Array.length tests - 1
+  do
+    Logs.debug (fun f ->
+        f "Start to run %s (run: %d, quota: %a)." (Test.Elt.name tests.(i)) iter
+          Mtime.Span.pp quota ) ;
+    let results = run ~start ~sampling ?stabilize ~quota iter measures tests.(i) in
+    Hashtbl.add tbl (Test.Elt.name tests.(i)) results
+  done ; tbl

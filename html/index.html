@@ -3,13 +3,15 @@
   <meta charset="utf-8">
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <script src="https://unpkg.com/simple-statistics@7.0.2/dist/simple-statistics.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script>
   <style>
     body { width: 100%; height: 100%; font-family:Helvetica Neue,metric,sans-serif; text-rendering: optimizeLegibility; }
     .center { width: 600px; margin: auto; }
     text { font-family: metric,sans-serif; }
     circle { fill: #dca3a3 }
     svg { overflow: hidden; margin: auto }
-    .background { fill: #dcdccc }
+    .background { fill: #f6f8fa }
     .chartTitle { text-anchor: end }
     .regLine { stroke: #94bff3; stroke-width:2px; opacity:0.7 }
     table { border: 1px solid #000000 }
@@ -17,7 +19,8 @@
   </style>
 </head>
 <body>
-  <script>
+  <script id="contents" type="application/json">{{contents}}</script>
+  <script type="text/javascript">
 const w = 600;
 const h = 400;
 const margin = {left:75,right:50,top:50,bottom:50}
@@ -25,6 +28,7 @@ const dotSize = 2;
 
 const innerW = w-(margin.left+margin.right);
 const innerH = h-(margin.top+margin.bottom);
+// const inputs = JSON.parse(document.getElementById("contents").textContent);
 
    // structure of JSON
    // { xLabel: string,
@@ -37,10 +41,9 @@ const innerH = h-(margin.top+margin.bottom);
    //
    // xLabel and yLabel are the same for any tests
 
-d3.json("dataset.json", function(inputs) {
-
+d3.json("outputs.json", function(inputs) {
   inputs.series.forEach(function(serie) {
-       serie.dataset.data.forEach(function(d) {
+       serie.dataset.forEach(function(d) {
            d.x = +d.x;
            d.y = +d.y;
        });
@@ -48,8 +51,8 @@ d3.json("dataset.json", function(inputs) {
 
   const xMin = 2;
   const yMin = 2;
-  const xMax = d3.max(inputs.series, function(serie) { return d3.max(serie.dataset.data, function (d) { return d.x; }); });
-  const yMax = d3.max(inputs.series, function(serie) { return d3.max(serie.dataset.data, function (d) { return d.y; }); });
+  const xMax = d3.max(inputs.series, function(serie) { return d3.max(serie.dataset, function (d) { return d.x; }); });
+  const yMax = d3.max(inputs.series, function(serie) { return d3.max(serie.dataset, function (d) { return d.y; }); });
 
   const xScale = d3.scaleLinear()
   	.domain([xMin,xMax])
@@ -100,7 +103,7 @@ d3.json("dataset.json", function(inputs) {
 	plots.append("g")
     .attr("transform","translate("+margin.left+","+margin.top+")")
   	.selectAll("circle")
-  	.data(function(d){ return d.dataset.data})
+  	.data(function(d){ return d.dataset})
   	.enter()
   	.append("circle")
   	.attr("r",dotSize)
@@ -111,10 +114,10 @@ d3.json("dataset.json", function(inputs) {
     	return yScale(d.y)
   	})
   plots.each(function (d,i){
-    const xVals = d.dataset.data.map(function(e,j){
+    const xVals = d.dataset.map(function(e,j){
      	return e.x;
     });
-    const yVals = d.dataset.data.map(function(e,j){
+    const yVals = d.dataset.map(function(e,j){
      	return e.y;
     });
     const meanX = ss.mean(xVals).toFixed(0);
@@ -129,14 +132,14 @@ d3.json("dataset.json", function(inputs) {
     const linReg = ss.linearRegression(pairs);
     const linRegLine = ss.linearRegressionLine(linReg);
     let summary=[
-      ["Mean of x",meanX],
-      ["Mean of y",meanY],
-      ["Sample variance of x",varX],
-      ["Sample variance of y",varY],
-      ["Correlation between x and y",corCoeff],
-      ["Linear regression line","y="+linReg.b.toFixed(2)+" + "+linReg.m.toFixed(3)+"x"],
-      ["Coefficient",d.ols.estimate],
-      ["R²",d.ols.r_square]
+      ["Mean of x", meanX],
+      ["Mean of y", meanY],
+      ["Sample variance of x", varX],
+      ["Sample variance of y", varY],
+      ["Correlation between x and y", corCoeff],
+      ["Linear regression line", "y = "+linReg.b.toFixed(2)+" + "+linReg.m.toFixed(3)+"x"],
+      ["Coefficient", d.result.estimate],
+      ["R²", d.result.r_square]
     ]
     d3.select("#bechamel-"+i)
       .append("table")
@@ -151,6 +154,26 @@ d3.json("dataset.json", function(inputs) {
       .append("td")
       .text(function(d) { return d; });
 
+    const sampling_to_string = function(sampling) {
+        if (Number.isInteger(sampling)) {
+            return "(`Linear "+sampling+")";
+        } else {
+            return "(`Geometric "+sampling+")";
+        } };
+
+    const new_line = "\n"
+
+    d3.select("#bechamel-"+i)
+      .append("pre").append("code").attr("class", "ml hljs ocaml")
+      .text(function(c) { return "let samples = run ~start:"+d.description.start+new_line
+                                +" ~sampling:"+sampling_to_string(d.description.sampling)+new_line
+                                +" ~stabilize:"+d.description.stabilize+new_line
+                                +" ~run:"+d.description.run+new_line
+                                +" ~quota:"+d.description.quota+new_line
+                                +" [ "+d.description.instances.join("; ")+" ]"
+                                +" fn ;;"+new_line
+                                +"val samples : (int * int64) = ("+d.description.samples+", "+d.description.time+")"; });
+
     let line = d3.select(this).append("line")
     	.attr("transform","translate("+margin.left+","+margin.top+")")
     	.attr("class","regLine")
@@ -162,7 +185,11 @@ d3.json("dataset.json", function(inputs) {
     	.attr("x2",xScale(xMax))
     	.attr("y2",yScale(linRegLine(xMax)))
 
+    document.querySelectorAll('div code').forEach(function(block) {
+      hljs.highlightBlock(block);
+    });
   })
-})
+});
+
   </script>
 </body>

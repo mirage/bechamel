@@ -25,7 +25,10 @@ let compare k0 k1 =
   Scanf.sscanf k0 "%s %d" (fun _ a' -> a := a') ;
   Scanf.sscanf k1 "%s %d" (fun _ b' -> b := b') ;
   !a - !b
+let nothing _ = Ok ()
 
 let () =
   let results = benchmark () in
-  Bechamel_js.(emit ~dst:(Channel stdout) ignore ~compare ~x_label:Measure.run ~y_label:(Measure.label Instance.monotonic_clock) results)
+  match Bechamel_js.(emit ~dst:(Channel stdout) nothing ~compare ~x_label:Measure.run ~y_label:(Measure.label Instance.monotonic_clock) results) with
+  | Ok () -> ()
+  | Error (`Msg err) -> invalid_arg err
