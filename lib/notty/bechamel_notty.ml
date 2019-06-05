@@ -51,7 +51,7 @@ let ols_value : predictor:Label.t -> Analyze.OLS.t -> image = fun ~predictor v -
   if not (List.mem predictor (Analyze.OLS.predictors v))
   then Fmt.invalid_arg "Predictor %a was not computed in %a."
       Label.pp predictor
-      (Analyze.OLS.pp ~colors:Label.Map.empty) v ;
+      Analyze.OLS.pp v ;
 
   let attrs = match Analyze.OLS.r_square v with
     | Some r_square ->
