@@ -19,7 +19,6 @@
   </style>
 </head>
 <body>
-  <script id="contents" type="application/json">{{contents}}</script>
   <script type="text/javascript">
 const w = 600;
 const h = 400;
@@ -28,7 +27,6 @@ const dotSize = 2;
 
 const innerW = w-(margin.left+margin.right);
 const innerH = h-(margin.top+margin.bottom);
-// const inputs = JSON.parse(document.getElementById("contents").textContent);
 
    // structure of JSON
    // { xLabel: string,
@@ -41,8 +39,8 @@ const innerH = h-(margin.top+margin.bottom);
    //
    // xLabel and yLabel are the same for any tests
 
-d3.json("outputs.json", function(inputs) {
-  inputs.series.forEach(function(serie) {
+function render(inputs) {
+ inputs.series.forEach(function(serie) {
        serie.dataset.forEach(function(d) {
            d.x = +d.x;
            d.y = +d.y;
@@ -189,7 +187,15 @@ d3.json("outputs.json", function(inputs) {
       hljs.highlightBlock(block);
     });
   })
-});
+};
+
+var contents = null;
+//INSERT_CONTENTS_HERE//
+
+if (contents == null)
+  d3.json("outputs.json", render);
+else
+  render(contents);
 
   </script>
 </body>

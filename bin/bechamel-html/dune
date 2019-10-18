@@ -1,0 +1,15 @@
+(executable
+ (name bechamel_html)
+ (modules bechamel_html html_file)
+ (package bechamel)
+ (public_name bechamel-html))
+
+(rule
+ (targets html_file.ml)
+ (deps (:src ../../html/index.html))
+ (action
+  (with-stdout-to %{targets}
+   (progn
+    (echo "let data = {html_file|")
+    (cat %{src})
+    (echo "|html_file}")))))
