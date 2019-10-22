@@ -8,5 +8,5 @@
  (with-stdout-to html_file.ml
   (progn
    (echo "let data = {html_file|")
-   (cat %{dep:../../html/index.html})
+   (cat ../../html/index.html)
    (echo "|html_file}"))))
