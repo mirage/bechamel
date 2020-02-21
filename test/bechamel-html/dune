@@ -1,0 +1,11 @@
+(rule
+ (targets output.html)
+ (action
+  (with-stdout-to
+   %{targets}
+   (system "%{bin:bechamel-html} < %{dep:input.json}"))))
+
+(alias
+ (name runtest)
+ (action
+  (diff output.html.expected output.html)))

@@ -190,7 +190,8 @@ function render(inputs) {
 };
 
 var contents = null;
-//BECHAMEL_CONTENTS//
+contents = {"a": "b"}
+;
 
 if (contents == null)
   d3.json("outputs.json", render);
