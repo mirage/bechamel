@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <script src="https://unpkg.com/simple-statistics@7.0.2/dist/simple-statistics.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script>
+  <style>
+    body { width: 100%; height: 100%; font-family:Helvetica Neue,metric,sans-serif; text-rendering: optimizeLegibility; }
+    .center { width: 600px; margin: auto; }
+    text { font-family: metric,sans-serif; }
+    circle { fill: #dca3a3 }
+    svg { overflow: hidden; margin: auto }
+    .background { fill: #f6f8fa }
+    .chartTitle { text-anchor: end }
+    .regLine { stroke: #94bff3; stroke-width:2px; opacity:0.7 }
+    table { border: 1px solid #000000 }
+    tr { fill: #3f3f3f; font-size:9.6px }
+  </style>
+</head>
+<body>
+  <script type="text/javascript">
+const w = 600;
+const h = 400;
+const margin = {left:75,right:50,top:50,bottom:50}
+const dotSize = 2;
+
+const innerW = w-(margin.left+margin.right);
+const innerH = h-(margin.top+margin.bottom);
+
+   // structure of JSON
+   // { xLabel: string,
+   //   yLabel: string,
+   //   series: [ tests ] }
+   //
+   // tests := { name: string,
+   //            dataset: { ..., data: [ point ] },
+   //            ols: { estimate: float, r_square: float (optional) } }
+   //
+   // xLabel and yLabel are the same for any tests
+
+function render(inputs) {
+  inputs.series.forEach(function(serie) {
+       serie.dataset.forEach(function(d) {
+           d.x = +d.x;
+           d.y = +d.y;
+       });
+  });
+
+  const xMin = 2;
+  const yMin = 2;
+  const xMax = d3.max(inputs.series, function(serie) { return d3.max(serie.dataset, function (d) { return d.x; }); });
+  const yMax = d3.max(inputs.series, function(serie) { return d3.max(serie.dataset, function (d) { return d.y; }); });
+
+  const xScale = d3.scaleLinear()
+  	.domain([xMin,xMax])
+  	.range([0,innerW])
+  	.nice();
+  const yScale = d3.scaleLinear()
+  	.domain([yMin,yMax])
+  	.range([innerH,0])
+  	.nice();
+  const xAxis = d3.axisBottom()
+  	.scale(xScale)
+  	.ticks(7);
+  const yAxis = d3.axisLeft()
+  	.scale(yScale)
+  	.ticks(5)
+  const center = d3.select("body")
+    .append("div")
+    .attr("class", "center")
+    .attr("id", "bechamel");
+  let plots = d3.select("#bechamel")
+    .selectAll("svg")
+  	.data(inputs.series)
+    .enter()
+  	.append("div")
+    .attr("id", function(d, i) { return "bechamel-"+i; })
+  	.append("svg")
+  	.attr("width",w)
+  	.attr("height",h);
+  plots.append("rect")
+  	.attr("x",margin.left)
+  	.attr("y",margin.top)
+  	.attr("width",innerW)
+  	.attr("height",innerH)
+  	.attr("class","background");
+  plots.append("text")
+  	.attr("class","chartTitle")
+  	.attr("x",w/2)
+  	.attr("y",margin.top-10)
+  	.text(function(d,i){
+    	return "# " + d.name
+  	})
+  plots.append("g")
+  	.attr("transform","translate("+margin.left+","+(h-margin.bottom)+")")
+  	.call(xAxis)
+  plots.append("g")
+  	.attr("transform","translate("+margin.left+","+margin.left+")")
+  	.call(yAxis)
+	plots.append("g")
+    .attr("transform","translate("+margin.left+","+margin.top+")")
+  	.selectAll("circle")
+  	.data(function(d){ return d.dataset})
+  	.enter()
+  	.append("circle")
+  	.attr("r",dotSize)
+  	.attr("cx",function(d){
+    	return xScale(d.x)
+  	})
+  	.attr("cy",function(d){
+    	return yScale(d.y)
+  	})
+  plots.each(function (d,i){
+    const xVals = d.dataset.map(function(e,j){
+     	return e.x;
+    });
+    const yVals = d.dataset.map(function(e,j){
+     	return e.y;
+    });
+    const meanX = ss.mean(xVals).toFixed(0);
+    const meanY = ss.mean(yVals).toFixed(2);
+    const varX = ss.sampleVariance(xVals).toFixed(0);
+    const varY = ss.sampleVariance(yVals).toFixed(1);
+    const corCoeff = ss.sampleCorrelation(xVals,yVals).toFixed(3);
+    const pairs = [];
+    xVals.forEach(function(d,i){
+      pairs.push([xVals[i],yVals[i]])
+    })
+    const linReg = ss.linearRegression(pairs);
+    const linRegLine = ss.linearRegressionLine(linReg);
+    let summary=[
+      ["Mean of x", meanX],
+      ["Mean of y", meanY],
+      ["Sample variance of x", varX],
+      ["Sample variance of y", varY],
+      ["Correlation between x and y", corCoeff],
+      ["Linear regression line", "y = "+linReg.b.toFixed(2)+" + "+linReg.m.toFixed(3)+"x"],
+      ["Coefficient", d.result.estimate],
+      ["R²", d.result.r_square]
+    ]
+    d3.select("#bechamel-"+i)
+      .append("table")
+      .append("tbody")
+    	.selectAll("tr")
+    	.data(summary)
+    	.enter()
+    	.append("tr")
+      .selectAll("td")
+      .data(function(d) { return d; })
+      .enter()
+      .append("td")
+      .text(function(d) { return d; });
+
+    const sampling_to_string = function(sampling) {
+        if (Number.isInteger(sampling)) {
+            return "(`Linear "+sampling+")";
+        } else {
+            return "(`Geometric "+sampling+")";
+        } };
+
+    const new_line = "\n"
+
+    d3.select("#bechamel-"+i)
+      .append("pre").append("code").attr("class", "ml hljs ocaml")
+      .text(function(c) { return "let samples = run ~start:"+d.description.start+new_line
+                                +" ~sampling:"+sampling_to_string(d.description.sampling)+new_line
+                                +" ~stabilize:"+d.description.stabilize+new_line
+                                +" ~run:"+d.description.run+new_line
+                                +" ~quota:"+d.description.quota+new_line
+                                +" [ "+d.description.instances.join("; ")+" ]"
+                                +" fn ;;"+new_line
+                                +"val samples : (int * int64) = ("+d.description.samples+", "+d.description.time+")"; });
+
+    let line = d3.select(this).append("line")
+    	.attr("transform","translate("+margin.left+","+margin.top+")")
+    	.attr("class","regLine")
+    	.attr("x1",xScale(xMin))
+    	.attr("x2",xScale(xMin))
+    	.attr("y1",yScale(linRegLine(xMin)))
+    	.attr("y2",yScale(linRegLine(xMin)))
+    line.transition().duration(1000).delay(2000)
+    	.attr("x2",xScale(xMax))
+    	.attr("y2",yScale(linRegLine(xMax)))
+
+    document.querySelectorAll('div code').forEach(function(block) {
+      hljs.highlightBlock(block);
+    });
+  })
+};
+
+var contents = null;
+contents = {"a": "b"}
+;
+
+if (contents == null)
+  d3.json("outputs.json", render);
+else
+  render(contents);
+
+  </script>
+</body>
