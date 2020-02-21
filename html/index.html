@@ -40,7 +40,7 @@ const innerH = h-(margin.top+margin.bottom);
    // xLabel and yLabel are the same for any tests
 
 function render(inputs) {
- inputs.series.forEach(function(serie) {
+  inputs.series.forEach(function(serie) {
        serie.dataset.forEach(function(d) {
            d.x = +d.x;
            d.y = +d.y;
@@ -190,7 +190,7 @@ function render(inputs) {
 };
 
 var contents = null;
-//INSERT_CONTENTS_HERE//
+//BECHAMEL_CONTENTS//
 
 if (contents == null)
   d3.json("outputs.json", render);

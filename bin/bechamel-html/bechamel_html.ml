@@ -16,9 +16,9 @@ let string_find s target =
 
 let head, tail =
   let data = Html_file.data in
-  let separator = "//INSERT_CONTENTS_HERE//" in
+  let separator = "//BECHAMEL_CONTENTS//" in
   match string_find data separator with
-  | None -> assert false
+  | None -> failwith "Separator not found"
   | Some i ->
     let ends = i + String.length separator in
     String.sub data 0 i,
