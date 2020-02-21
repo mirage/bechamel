@@ -24,7 +24,7 @@ module Make (Functor : S.FUNCTOR) = struct
     let () =
       let instance = X.instance in
       Hashtbl.add handlers
-        (Obj.extension_id [%extension_constructor T])
+        ((Stdlib.Obj.extension_id [%extension_constructor T])[@warning "-3"])
         (function T x -> V (x, instance) | _ -> raise Not_found)
   end
 
@@ -42,5 +42,5 @@ module Make (Functor : S.FUNCTOR) = struct
     in
     go
       (Hashtbl.find_all handlers
-         (Obj.extension_id (Obj.extension_constructor t)))
+         (Stdlib.Obj.(extension_id (extension_constructor t)))[@warning "-3"])
 end
