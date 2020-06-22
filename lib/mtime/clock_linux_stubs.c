@@ -8,13 +8,29 @@
 #include <caml/alloc.h>
 #include <caml/fail.h>
 
-CAMLprim value
-clock_linux_get_time(value vunit)
+#ifndef __unused
+#define __unused(x) x __attribute((unused))
+#endif
+#define __unit() value __unused(unit)
+
+uint64_t
+clock_linux_get_time_native(__unit ())
 {
   struct timespec ts;
 
-  if (clock_gettime(CLOCK_MONOTONIC, &ts))
-    caml_invalid_argument("bechamel.clock: unsupported clock");
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+
+  return ((uint64_t) ts.tv_sec
+          * (uint64_t) 1000000000LL
+          + (uint64_t) ts.tv_nsec);
+}
+
+CAMLprim value
+clock_linux_get_time_bytecode(__unit ())
+{
+  struct timespec ts;
+
+  clock_gettime(CLOCK_MONOTONIC, &ts);
 
   return caml_copy_int64((uint64_t) ts.tv_sec
                          * (uint64_t) 1000000000LL

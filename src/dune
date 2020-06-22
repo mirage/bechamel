@@ -2,3 +2,11 @@
  (name main)
  (modules main)
  (libraries bechamel bechamel.js))
+
+(rule
+ (targets output.json)
+ (action (with-stdout-to %{targets} (run ./main.exe))))
+
+(rule
+ (targets output.html)
+ (action (system "%{bin:bechamel-html} < %{dep:output.json} > %{targets}")))
