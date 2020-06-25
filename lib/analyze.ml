@@ -18,8 +18,8 @@ module OLS = struct
     , Array.init (Array.length m) (fun i -> responder_accessor m.(i)) )
 
   type t =
-    { predictors: Label.t array
-    ; responder: Label.t
+    { predictors: string array
+    ; responder: string
     ; value: (v, Rresult.R.msg) result }
 
   and v =
@@ -131,9 +131,9 @@ module OLS = struct
   let pp ~predictors ~responder ppf v =
     Fmt.pf ppf "{ @[" ;
     for i = 0 to Array.length predictors - 1 do
-      Fmt.pf ppf "%a per %a = %f"
-        Label.pp responder
-        Label.pp predictors.(i)
+      Fmt.pf ppf "%s per %s = %f"
+        responder
+        predictors.(i)
         v.estimates.(i) ;
       (match v.ci95 with
        | Some ci95 -> Fmt.pf ppf " (confidence: %a)" Ci95.pp ci95.(i)
@@ -241,8 +241,8 @@ module RANSAC = struct
     sqrt (sum_dy /. float (Array.length r - 2)) /. sqrt (sum (Array.map dx r))
 
   type t =
-    { predictor: Label.t
-    ; responder: Label.t
+    { predictor: string
+    ; responder: string
     ; mean_value: float
     ; constant: float
     ; max_value: float * float
@@ -250,9 +250,9 @@ module RANSAC = struct
     ; standard_error: float }
 
   let pp ppf t =
-    Fmt.pf ppf "{ @[<hov>%a per %a = %f;@ standard-error = %f;@] }"
-      Label.pp t.responder
-      Label.pp t.predictor t.mean_value t.standard_error
+    Fmt.pf ppf "{ @[<hov>%s per %s = %f;@ standard-error = %f;@] }"
+      t.responder
+      t.predictor t.mean_value t.standard_error
 
   let result_column ~predictor ~responder m =
     ( Measurement_raw.get ~label:predictor m
@@ -307,16 +307,16 @@ end
 
 type 'a t =
   | OLS :
-      { predictors: Label.t array
+      { predictors: string array
       ; r_square: bool
       ; bootstrap: int }
       -> OLS.t t
-  | RANSAC : {filter_outliers: bool; predictor: Label.t} -> RANSAC.t t
+  | RANSAC : {filter_outliers: bool; predictor: string} -> RANSAC.t t
 
 let ols ~r_square ~bootstrap ~predictors = OLS {predictors; r_square; bootstrap}
 let ransac ~filter_outliers ~predictor = RANSAC {filter_outliers; predictor}
 
-let one : type a. a t -> Measure.Extension.t -> Benchmark.stats * Measurement_raw.t array -> a =
+let one : type a. a t -> Measure.witness -> Benchmark.stats * Measurement_raw.t array -> a =
  fun kind e (_, m) ->
   let label = Measure.label e in
   match kind with
@@ -325,13 +325,13 @@ let one : type a. a t -> Measure.Extension.t -> Benchmark.stats * Measurement_ra
   | RANSAC {filter_outliers; predictor} ->
       RANSAC.ransac ~filter_outliers ~predictor ~responder:label m
 
-let all : type a. a t -> Measure.Extension.t -> (string, Benchmark.stats * Measurement_raw.t array) Hashtbl.t -> (string, a) Hashtbl.t =
+let all : type a. a t -> Measure.witness -> (string, Benchmark.stats * Measurement_raw.t array) Hashtbl.t -> (string, a) Hashtbl.t =
   fun kind e ms ->
     let ret = Hashtbl.create (Hashtbl.length ms) in
     Hashtbl.iter (fun name m -> Hashtbl.add ret name (one kind e m)) ms ;
     ret
 
-let merge : type a. a t -> Measure.Extension.t list -> (string, a) Hashtbl.t list -> (Label.t, (string, a) Hashtbl.t) Hashtbl.t =
+let merge : type a. a t -> Measure.witness list -> (string, a) Hashtbl.t list -> (string, (string, a) Hashtbl.t) Hashtbl.t =
   fun _ instances results ->
   let ret = Hashtbl.create (List.length instances) in
   List.iter2

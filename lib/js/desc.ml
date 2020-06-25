@@ -13,9 +13,7 @@ let mtime_witness : Mtime.span Json_encoding.encoding =
   conv Mtime.Span.to_uint64_ns Mtime.Span.of_uint64_ns int53
     (* XXX(dinosaure): fix [int53]. *)
 
-let label_witness : Label.t Json_encoding.encoding =
-  let open Json_encoding in
-  conv Label.to_string Label.of_string string
+let label_witness : string Json_encoding.encoding = Json_encoding.string
 
 let witness : t Json_encoding.encoding =
   let open Json_encoding in
@@ -28,7 +26,7 @@ let witness : t Json_encoding.encoding =
   let samples = req "samples" int in
   let time = req "time" mtime_witness in
   conv
-    (fun t ->
+    (fun (t : t) ->
        let open Benchmark in
        t.start, t.sampling, t.stabilize, t.quota, t.run, t.instances, t.samples, t.time)
     (fun (start, sampling, stabilize, quota, run', instances, samples, time) ->

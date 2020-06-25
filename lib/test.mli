@@ -29,5 +29,5 @@ val make_indexed :
 val make_grouped : name:string -> ?fmt:fmt_grouped -> t list -> t
 val name : t -> string
 val names : t -> string list
-val set : t -> Elt.t list
+val elements : t -> Elt.t list
 val expand : t list -> Elt.t list

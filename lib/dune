@@ -1,4 +1,4 @@
 (library
  (name bechamel)
  (public_name bechamel)
- (libraries stdlib-shims fmt rresult logs mtime clock))
+ (libraries stdlib-shims fmt rresult logs mtime monotonic_clock))

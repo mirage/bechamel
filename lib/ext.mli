@@ -17,5 +17,5 @@ module Make (Functor : S.FUNCTOR) : sig
   end) : Extension with type x = X.t
 
   val inj : 'a Functor.t -> 'a extension
-  val proj : t -> instance
+  val prj : t -> instance
 end
