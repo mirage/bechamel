@@ -29,18 +29,13 @@ module Make (Functor : S.FUNCTOR) = struct
   end
 
   let inj (type a) (f : a Functor.t) : a extension =
-    ( module Injection (struct
-      type t = a
+    (module Injection (struct type t = a let instance = f end))
 
-      let instance = f
-    end) )
+  let rec iter t lst =
+    let[@warning "-8"] f :: r = lst in
+    try f t with _ -> (iter [@tailcall]) t r
 
-  let proj (t : t) =
-    let rec go = function
-      | [] -> assert false (* totality *)
-      | x :: r -> ( try x t with Not_found -> go r )
-    in
-    go
-      (Hashtbl.find_all handlers
-         (Stdlib.Obj.(extension_id (extension_constructor t)))[@warning "-3"])
+  let prj (t : t) =
+    let uid = Stdlib.Obj.((extension_id (extension_constructor t) [@warning "-3"])) in
+    iter t (Hashtbl.find_all handlers uid)
 end

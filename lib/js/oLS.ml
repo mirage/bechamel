@@ -27,12 +27,12 @@ let witness : t Json_encoding.encoding =
     (obj3 estimate r_square ci95)
 
 let of_ols_result ~x_label ~y_label ols =
-  let has_y_label = Label.equal (Analyze.OLS.responder ols) y_label in
-  let has_x_label = List.exists (Label.equal x_label) (Analyze.OLS.predictors ols) in
+  let has_y_label = String.equal (Analyze.OLS.responder ols) y_label in
+  let has_x_label = List.exists (String.equal x_label) (Analyze.OLS.predictors ols) in
 
   if not has_y_label || not has_x_label
-  then Rresult.R.error_msgf "x:%a or y:%a does not exist in result: @[<hov>%a@]"
-      Label.pp x_label Label.pp y_label Analyze.OLS.pp ols
+  then Rresult.R.error_msgf "x:%s or y:%s does not exist in result: @[<hov>%a@]"
+      x_label y_label Analyze.OLS.pp ols
   else match Analyze.OLS.estimates ols with
     | None -> Rresult.R.error_msgf "Result is errored: @[<hov>%a@]" Analyze.OLS.pp ols
     | Some estimates ->
@@ -42,7 +42,7 @@ let of_ols_result ~x_label ~y_label ols =
         let estimate = ref None in
         try List.iter2
               (fun predictor e ->
-                 if Label.equal x_label predictor
+                 if String.equal x_label predictor
                  then ( estimate := Some e
                       ; raise Found ))
               predictors estimates ; assert false

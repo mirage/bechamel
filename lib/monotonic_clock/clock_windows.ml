@@ -4,4 +4,4 @@ external clock_windows_init : unit -> unit = "clock_windows_init"
 
 let () = clock_windows_init ()
 
-let get () = clock_windows_get_time ()
+let now () = clock_windows_get_time ()

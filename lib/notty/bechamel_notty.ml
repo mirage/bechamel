@@ -2,7 +2,7 @@ open Bechamel
 open Notty
 
 type 'a result = (string, 'a) Hashtbl.t
-type 'a results = (Label.t, 'a result) Hashtbl.t
+type 'a results = (string, 'a result) Hashtbl.t
 
 let ( <.> ) f g = fun x -> f (g x)
 
@@ -13,11 +13,11 @@ module Unit = struct
     if String.length unit > 5 then Fmt.invalid_arg "A unit shoud be smaller than 5 bytes: %s" unit ;
     Hashtbl.add units (Measure.label instance) unit
 
-  let label label = I.string A.empty (Label.to_string label)
+  let label label = I.string A.empty label
 
   let unit_of_label label =
     try Hashtbl.find units label
-    with Not_found -> Label.to_string label
+    with Not_found -> label
 end
 
 module Order = struct
@@ -47,11 +47,10 @@ end
 let fmt_value : _ format6 = "%6.04f %s/%s"
 let max_length_of_values = 23
 
-let ols_value : predictor:Label.t -> Analyze.OLS.t -> image = fun ~predictor v ->
+let ols_value : predictor:string -> Analyze.OLS.t -> image = fun ~predictor v ->
   if not (List.mem predictor (Analyze.OLS.predictors v))
-  then Fmt.invalid_arg "Predictor %a was not computed in %a."
-      Label.pp predictor
-      Analyze.OLS.pp v ;
+  then Fmt.invalid_arg "Predictor %s was not computed in %a."
+      predictor Analyze.OLS.pp v ;
 
   let attrs = match Analyze.OLS.r_square v with
     | Some r_square ->
@@ -72,7 +71,7 @@ let ols_value : predictor:Label.t -> Analyze.OLS.t -> image = fun ~predictor v -
   | None -> I.string A.(bg red ++ st bold) "#none"
   | Some values ->
     match List.fold_left2
-            (fun a v p -> if Label.equal p predictor then Some v else a)
+            (fun a v p -> if String.equal p predictor then Some v else a)
             None
             values (Analyze.OLS.predictors v) with
     | Some value ->
@@ -134,7 +133,6 @@ module One = struct
   let image_of_header ~rect result =
     let _, v = hashtbl_choose result in
     let responder = Analyze.OLS.responder v in
-    let responder = Label.to_string responder in
     let max_length_of_names = Hashtbl.fold (fun name _ -> max (String.length name)) result 0 in
 
     grid
@@ -179,7 +177,7 @@ module One = struct
         (fun (name, v) -> match Analyze.OLS.estimates v with
           | Some values ->
             List.fold_left2
-              (fun a v p -> if Label.equal p predictor then (name, Some v) else a)
+              (fun a v p -> if String.equal p predictor then (name, Some v) else a)
               (name, None)
               values (Analyze.OLS.predictors v)
           | None -> (name, None))
@@ -217,7 +215,7 @@ module One = struct
   let image_of_ols_result
     : ?sort:(string -> string -> int)
       -> rect:rect
-      -> predictor:Label.t
+      -> predictor:string
       -> Analyze.OLS.t result -> image
     = fun ?(sort= String.compare) ~rect ~predictor result ->
       let tests = Hashtbl.fold (fun name v a -> (name, v) :: a) result [] in
@@ -240,7 +238,7 @@ module Multiple = struct
     let instances = Hashtbl.fold (fun k _ a -> k :: a) results [] in
     let _, result = hashtbl_choose results in
     let max_length_of_names = Hashtbl.fold (fun name _ -> max (String.length name)) result 0 in
-    let max_length_of_instances = List.fold_right (fun (label : Label.t) -> max (String.length (label :> string))) instances max_length_of_values in
+    let max_length_of_instances = List.fold_right (fun label -> max (String.length label)) instances max_length_of_values in
     let max_length_of_fields = max max_length_of_values max_length_of_instances in
 
     let tt = List.map (fun _ -> [ break_t 1 1; line (max_length_of_fields + 4) 1 ]) instances |> List.concat in
@@ -248,9 +246,9 @@ module Multiple = struct
     let tt = tt @ [ corner_tr 1 1 ] in
 
     let cc = List.map
-        (fun (instance : Label.t) ->
-           let rest = max_length_of_instances - (String.length (instance :> string)) + 2 in
-           [ sideline 1 1; I.(string A.empty (instance :> string) |> I.hpad 2 0); I.void rest 0 ])
+        (fun instance ->
+           let rest = max_length_of_instances - (String.length instance) + 2 in
+           [ sideline 1 1; I.(string A.empty instance |> I.hpad 2 0); I.void rest 0 ])
         instances |> List.concat in
     let cc = sideline 1 1 :: I.(string A.(st italic) "name") :: I.void max_length_of_names 1 :: cc in
     let cc = cc @ [ sideline 1 1 ] in
@@ -281,14 +279,14 @@ module Multiple = struct
   let image_of_ols_results
     : ?sort:(string -> string -> int)
       -> rect:rect
-      -> predictor:Label.t
+      -> predictor:string
       -> Analyze.OLS.t results -> image
     = fun ?(sort= String.compare) ~rect ~predictor results ->
       let header = image_of_header ~rect results in
       let instances = Hashtbl.fold (fun k _ a -> k :: a) results [] in
       let _, result = hashtbl_choose results in
       let max_length_of_names = Hashtbl.fold (fun name _ -> max (String.length name)) result 0 in
-      let max_length_of_instances = List.fold_right (fun (label : Label.t) -> max (String.length (label :> string))) instances max_length_of_values in
+      let max_length_of_instances = List.fold_right (fun label -> max (String.length label)) instances max_length_of_values in
 
       let tests = Hashtbl.fold (fun name _ a -> name :: a) result [] in
       let tests = List.sort sort tests in

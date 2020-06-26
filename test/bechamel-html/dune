@@ -5,8 +5,8 @@
    %{targets}
    (system "%{bin:bechamel-html} < %{dep:input.json}"))))
 
-(alias
- (name runtest)
+(rule
+ (alias runtest)
  (package bechamel)
  (action
   (diff output.html.expected output.html)))

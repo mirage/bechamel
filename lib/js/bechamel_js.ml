@@ -1,13 +1,11 @@
 open Bechamel
 
 type t =
-  { x_label : Label.t
-  ; y_label : Label.t
+  { x_label : string
+  ; y_label : string
   ; series : (string, Desc.t * Dataset.t * OLS.t) Hashtbl.t }
 
-let label_witness : Label.t Json_encoding.encoding =
-  let open Json_encoding in
-  conv Label.to_string Label.of_string string
+let label_witness : string Json_encoding.encoding = Json_encoding.string
 
 let witness ~compare : t Json_encoding.encoding =
   let open Json_encoding in
@@ -32,7 +30,7 @@ let witness ~compare : t Json_encoding.encoding =
 
 let of_ols_results ~x_label ~y_label ols_results raws =
   if not (Hashtbl.mem ols_results y_label)
-  then Rresult.R.error_msgf "y:%a does not exist in OLS results" Label.pp y_label
+  then Rresult.R.error_msgf "y:%s does not exist in OLS results" y_label
   else
     let results = Hashtbl.find ols_results y_label in
     let series = Hashtbl.create (Hashtbl.length results) in
@@ -91,10 +89,10 @@ let channel filename =
   Channel oc
 
 type raws = (string, Benchmark.stats * Measurement_raw.t array) Hashtbl.t
-type ols_results = (Label.t, (string, Analyze.OLS.t) Hashtbl.t) Hashtbl.t
+type ols_results = (string, (string, Analyze.OLS.t) Hashtbl.t) Hashtbl.t
 
 let emit
-  : type a. dst:a dst -> a -> ?compare:(string -> string -> int) -> x_label:Label.t -> y_label:Label.t -> (ols_results * raws) -> unit or_error
+  : type a. dst:a dst -> a -> ?compare:(string -> string -> int) -> x_label:string -> y_label:string -> (ols_results * raws) -> unit or_error
   = fun ~dst a ?compare:(compare_label= String.compare) ~x_label ~y_label (ols_results, raw_results) ->
   let to_dst : type a. a dst -> Jsonm.dst = function
     | Manual _ -> `Manual

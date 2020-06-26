@@ -15,7 +15,8 @@ let benchmark () =
   let instances = Instance.[ minor_allocated
                            ; major_allocated
                            ; monotonic_clock ] in
-  let raw_results = Benchmark.all ~run:3000 ~quota:Benchmark.(s 1.) instances test in
+  let cfg = Benchmark.cfg ~run:3000 ~quota:(Time.second 0.5) () in
+  let raw_results = Benchmark.all cfg instances test in
   let results = List.map (fun instance -> Analyze.all ols instance raw_results) instances in
   let results = Analyze.merge ols instances results in
   results, raw_results
@@ -29,6 +30,12 @@ let nothing _ = Ok ()
 
 let () =
   let results = benchmark () in
-  match Bechamel_js.(emit ~dst:(Channel stdout) nothing ~compare ~x_label:Measure.run ~y_label:(Measure.label Instance.monotonic_clock) results) with
+  let results =
+    let open Bechamel_js in
+    emit ~dst:(Channel stdout) nothing ~compare
+      ~x_label:Measure.run
+      ~y_label:(Measure.label Instance.monotonic_clock)
+      results in
+  match results with
   | Ok () -> ()
   | Error (`Msg err) -> invalid_arg err

@@ -3,22 +3,16 @@ module Make (X : sig
 end) =
 struct
   type witness = Perf.t
-  type value = int64 ref
-  type label = string
 
   let load witness = Perf.enable witness
   let unload witness = Perf.disable witness
   let make () = Perf.make (Perf.Attr.make X.kind)
-  let float x = Int64.to_float !x
 
   let label witness =
     let kind = Perf.kind witness in
     Perf.Attr.Kind.to_string kind
 
-  let diff a b = {contents= Int64.sub !b !a}
-  let epsilon () = {contents= 0L}
-  let blit witness v = v := Perf.read witness
-  let compare a b = Int64.compare !a !b
+  let get witness = Int64.to_float (Perf.read witness)
 end
 
 module Cycles = Make (struct
@@ -108,16 +102,16 @@ module Extension = struct
 
   (* XXX(dinosaure): only software measures. *)
 
-  let cpu_clock = Measure.make (module Cpu_clock)
-  let task_clock = Measure.make (module Task_clock)
-  let page_faults = Measure.make (module Page_faults)
-  let context_switches = Measure.make (module Context_switches)
-  let cpu_migrations = Measure.make (module Cpu_migrations)
-  let page_faults_min = Measure.make (module Page_faults_min)
-  let page_faults_maj = Measure.make (module Page_faults_maj)
-  let alignment_faults = Measure.make (module Alignment_faults)
-  let emulation_faults = Measure.make (module Emulation_faults)
-  let dummy = Measure.make (module Dummy)
+  let cpu_clock = Measure.register (module Cpu_clock)
+  let task_clock = Measure.register (module Task_clock)
+  let page_faults = Measure.register (module Page_faults)
+  let context_switches = Measure.register (module Context_switches)
+  let cpu_migrations = Measure.register (module Cpu_migrations)
+  let page_faults_min = Measure.register (module Page_faults_min)
+  let page_faults_maj = Measure.register (module Page_faults_maj)
+  let alignment_faults = Measure.register (module Alignment_faults)
+  let emulation_faults = Measure.register (module Emulation_faults)
+  let dummy = Measure.register (module Dummy)
 end
 
 module Instance = struct

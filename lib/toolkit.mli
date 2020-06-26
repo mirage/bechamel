@@ -1,32 +1,32 @@
-module One : Measure.UNSAFE with type witness = unit and type value = int ref
-module Minor_allocated : Measure.UNSAFE with type witness = unit and type value = float ref
-module Major_allocated : Measure.UNSAFE with type witness = unit and type value = float ref
-module Promoted : Measure.UNSAFE with type witness = unit and type value = float ref
-module Compaction : Measure.UNSAFE with type witness = unit and type value = int ref
-module Minor_collection : Measure.UNSAFE with type witness = unit and type value = int ref
-module Major_collection : Measure.UNSAFE with type witness = unit and type value = int ref
-module Monotonic_clock : Measure.UNSAFE with type witness = unit and type value = int64 ref
+module One : S.MEASURE with type witness = unit
+module Minor_allocated : S.MEASURE with type witness = unit
+module Major_allocated : S.MEASURE with type witness = unit
+module Promoted : S.MEASURE with type witness = unit
+module Compaction : S.MEASURE with type witness = unit
+module Minor_collection : S.MEASURE with type witness = unit
+module Major_collection : S.MEASURE with type witness = unit
+module Monotonic_clock : S.MEASURE with type witness = unit
 
 module Extension : sig
-  type ('w, 'a) t = ('w, 'a) Measure.Switch.bind Measure.Extension.extension
+  type 'w t = 'w Measure.measure
 
-  val one : (One.witness, One.value) t
-  val minor_allocated : (Minor_allocated.witness, Minor_allocated.value) t
-  val major_allocated : (Major_allocated.witness, Major_allocated.value) t
-  val promoted : (Promoted.witness, Promoted.value) t
-  val compaction : (Compaction.witness, Compaction.value) t
-  val minor_collection : (Minor_collection.witness, Minor_collection.value) t
-  val major_collection : (Major_collection.witness, Major_collection.value) t
-  val monotonic_clock : (Monotonic_clock.witness, Monotonic_clock.value) t
+  val one : One.witness t
+  val minor_allocated : Minor_allocated.witness t
+  val major_allocated : Major_allocated.witness t
+  val promoted : Promoted.witness t
+  val compaction : Compaction.witness t
+  val minor_collection : Minor_collection.witness t
+  val major_collection : Major_collection.witness t
+  val monotonic_clock : Monotonic_clock.witness t
 end
 
 module Instance : sig
-  val one : Measure.Extension.t
-  val minor_allocated : Measure.Extension.t
-  val major_allocated : Measure.Extension.t
-  val promoted : Measure.Extension.t
-  val compaction : Measure.Extension.t
-  val minor_collection : Measure.Extension.t
-  val major_collection : Measure.Extension.t
-  val monotonic_clock : Measure.Extension.t
+  val one : Measure.witness
+  val minor_allocated : Measure.witness
+  val major_allocated : Measure.witness
+  val promoted : Measure.witness
+  val compaction : Measure.witness
+  val minor_collection : Measure.witness
+  val major_collection : Measure.witness
+  val monotonic_clock : Measure.witness
 end
