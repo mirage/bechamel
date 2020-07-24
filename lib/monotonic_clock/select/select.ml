@@ -13,21 +13,20 @@ let sexp_empty = "()"
 
 let () =
   let system, output =
-    try
-      match Sys.argv with
-      | [|_; "--system"; system; "-o"; output|] ->
-          let system =
-            match system with
-            | "linux" -> `Linux
-            | "freebsd" -> `FreeBSD
-            | "windows" | "mingw64" | "cygwin" -> `Windows
-            | "macosx" -> `MacOSX
-            | v -> invalid_arg "Invalid argument of system option: %s" v
-          in
-          (system, output)
-      | _ -> invalid_arg "%s --system system -o <output>" Sys.argv.(0)
-    with _ -> invalid_arg "%s --system system -o <output>, got %s" Sys.argv.(0)
-                (String.concat " " (Array.to_list Sys.argv))
+    match Sys.argv with
+    | [|_; "--system"; system; "-o"; output|] ->
+        let system =
+          match system with
+          | "linux" | "linux_eabihf" | "linux_elf" | "elf" -> `Linux
+          | "freebsd" -> `FreeBSD
+          | "windows" | "mingw64" | "cygwin" -> `Windows
+          | "macosx" -> `MacOSX
+          | v -> invalid_arg "Invalid argument of system option: %s" v
+        in
+        (system, output)
+    | _ ->
+        invalid_arg "Expected `%s --system <system> -o <output>' got `%s'"
+          Sys.argv.(0) (String.concat " " (Array.to_list Sys.argv))
   in
   let oc_ml, oc_c, oc_sexp =
     ( open_out (output ^ ".ml")
