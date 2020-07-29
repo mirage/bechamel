@@ -7,14 +7,14 @@ let col_norm a column =
   for i = 0 to Array.length a - 1 do
     let entry = a.(i).(column) in
     acc := !acc +. (entry *. entry)
-  done ;
+  done;
   sqrt !acc
 
 let col_inner_prod t j1 j2 =
   let acc = ref 0. in
   for i = 0 to Array.length t - 1 do
     acc := !acc +. (t.(i).(j1) *. t.(i).(j2))
-  done ;
+  done;
   !acc
 
 let qr_in_place a =
@@ -25,19 +25,19 @@ let qr_in_place a =
     let r = Array.make_matrix n n 0. in
     for j = 0 to n - 1 do
       let alpha = col_norm a j in
-      r.(j).(j) <- alpha ;
+      r.(j).(j) <- alpha;
       let one_over_alpha = 1. /. alpha in
       for i = 0 to m - 1 do
         a.(i).(j) <- a.(i).(j) *. one_over_alpha
-      done ;
+      done;
       for j2 = j + 1 to n - 1 do
         let c = col_inner_prod a j j2 in
-        r.(j).(j2) <- c ;
+        r.(j).(j2) <- c;
         for i = 0 to m - 1 do
           a.(i).(j2) <- a.(i).(j2) -. (c *. a.(i).(j))
         done
       done
-    done ;
+    done;
     (a, r)
 
 let qr ?(in_place = false) a =
@@ -57,7 +57,7 @@ let mul_mv ?(trans = false) a x =
         let get i j = a.(i).(j) in
         (rows, cols, get)
     in
-    if n <> Array.length x then failwith "Dimension mismatch" ;
+    if n <> Array.length x then failwith "Dimension mismatch";
     let result = Array.make m 0. in
     for i = 0 to m - 1 do
       let v, _ =
@@ -66,7 +66,7 @@ let mul_mv ?(trans = false) a x =
           (0., 0) x
       in
       result.(i) <- v
-    done ;
+    done;
     result
 
 let is_nan v = match classify_float v with FP_nan -> true | _ -> false
@@ -82,11 +82,11 @@ let triu_solve r b =
   else
     let sol = Array.copy b in
     for i = m - 1 downto 0 do
-      sol.(i) <- sol.(i) /. r.(i).(i) ;
+      sol.(i) <- sol.(i) /. r.(i).(i);
       for j = 0 to i - 1 do
         sol.(j) <- sol.(j) -. (r.(j).(i) *. sol.(i))
       done
-    done ;
+    done;
     if Array.exists is_nan sol then
       Rresult.R.error_msgf "triu_solve detected NaN result"
     else Rresult.R.ok sol

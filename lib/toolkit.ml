@@ -93,11 +93,22 @@ end
 
 module Instance = struct
   let one = Measure.instance (module One) Extension.one
-  let minor_allocated = Measure.instance (module Minor_allocated) Extension.minor_allocated
-  let major_allocated = Measure.instance (module Major_allocated) Extension.major_allocated
+
+  let minor_allocated =
+    Measure.instance (module Minor_allocated) Extension.minor_allocated
+
+  let major_allocated =
+    Measure.instance (module Major_allocated) Extension.major_allocated
+
   let promoted = Measure.instance (module Promoted) Extension.promoted
   let compaction = Measure.instance (module Compaction) Extension.compaction
-  let major_collection = Measure.instance (module Major_collection) Extension.major_collection
-  let minor_collection = Measure.instance (module Minor_collection) Extension.minor_collection
-  let monotonic_clock = Measure.instance (module Monotonic_clock) Extension.monotonic_clock
+
+  let major_collection =
+    Measure.instance (module Major_collection) Extension.major_collection
+
+  let minor_collection =
+    Measure.instance (module Minor_collection) Extension.minor_collection
+
+  let monotonic_clock =
+    Measure.instance (module Monotonic_clock) Extension.monotonic_clock
 end

@@ -1,13 +1,15 @@
 (rule
  (targets monotonic_clock.ml monotonic_clock_stubs.c monotonic_clock.sexp)
- (deps (:select select/select.ml)
-       clock_linux.ml
-       clock_linux_stubs.c
-       clock_windows.ml
-       clock_windows_stubs.c
-       clock_mach.ml
-       clock_mach_stubs.c)
- (action (run %{ocaml} %{select} --system %{ocaml-config:system} -o monotonic_clock)))
+ (deps
+  (:select select/select.ml)
+  clock_linux.ml
+  clock_linux_stubs.c
+  clock_windows.ml
+  clock_windows_stubs.c
+  clock_mach.ml
+  clock_mach_stubs.c)
+ (action
+  (run %{ocaml} %{select} --system %{ocaml-config:system} -o monotonic_clock)))
 
 (library
  (name monotonic_clock)
@@ -15,6 +17,7 @@
  (public_name bechamel.monotonic_clock)
  (foreign_stubs
   (language c)
-  (flags (:include monotonic_clock.sexp))
+  (flags
+   (:include monotonic_clock.sexp))
   (names monotonic_clock_stubs))
  (libraries fmt))

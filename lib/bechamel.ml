@@ -1,5 +1,3 @@
-let () = Printexc.record_backtrace true
-
 module S = S
 module Measure = Measure
 module Benchmark = Benchmark

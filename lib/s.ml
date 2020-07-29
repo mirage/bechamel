@@ -1,4 +1,6 @@
-module type FUNCTOR = sig type 'a t end
+module type FUNCTOR = sig
+  type 'a t
+end
 
 module type MEASURE = sig
   type witness

@@ -24,18 +24,23 @@ module Make (Functor : S.FUNCTOR) = struct
     let () =
       let instance = X.instance in
       Hashtbl.add handlers
-        ((Stdlib.Obj.extension_id [%extension_constructor T])[@warning "-3"])
+        (Stdlib.Obj.extension_id [%extension_constructor T] [@warning "-3"])
         (function T x -> V (x, instance) | _ -> raise Not_found)
   end
 
   let inj (type a) (f : a Functor.t) : a extension =
-    (module Injection (struct type t = a let instance = f end))
+    ( module Injection (struct
+      type t = a
+
+      let instance = f end) )
 
   let rec iter t lst =
-    let[@warning "-8"] f :: r = lst in
+    let[@warning "-8"] (f :: r) = lst in
     try f t with _ -> (iter [@tailcall]) t r
 
   let prj (t : t) =
-    let uid = Stdlib.Obj.((extension_id (extension_constructor t) [@warning "-3"])) in
+    let uid =
+      Stdlib.Obj.((extension_id (extension_constructor t) [@warning "-3"]))
+    in
     iter t (Hashtbl.find_all handlers uid)
 end
