@@ -64,7 +64,7 @@ stabilize_garbage_collector () ;
 
   let init_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
 
-  while (not (exceeded_allowed_time cfg.quota init_time)) && !idx < cfg.run do
+  while (not (exceeded_allowed_time cfg.quota init_time)) && !run < cfg.run do
     let current_run = !run in
     let current_idx = !idx in
 
