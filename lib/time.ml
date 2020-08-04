@@ -9,6 +9,9 @@ let to_span o x =
     (of_uint64_ns 0L)
 
 let second n = to_span 1. n
+
 let millisecond n = to_span Mtime.ms_to_s n
+
 let microsecond n = to_span Mtime.us_to_s n
+
 let nanosecond n = to_span Mtime.ns_to_s n

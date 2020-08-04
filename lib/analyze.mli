@@ -4,13 +4,23 @@
     execution time of a code segments. For example, the following table might
     represent [{!Measurement_raw.t} array] collected by {!Benchmark.run}:
 
-    {v +-----+------+ | run | time | +-----+------+ | 1 | 19 | | 2 | 25 | | 3 |
-    37 | | 4 | 47 | | 5 | 56 | +-----+------+ v}
+    {v
+  +-----+------+
+  | run | time |
+  +-----+------+
+  | 1   | 19   |
+  | 2   | 25   |
+  | 3   | 37   |
+  | 4   | 47   |
+  | 5   | 56   |
+  +-----+------+
+    v}
 
     Bechamel records 3000 samples and the number of iterations can grows
     geometrically (see {!Benchmark.run}). Then, Bechamel can use 2 algorithms:
 
-    {ul {- Ordinary Least Square} {- RANdom SAmple Consensus}}
+    - Ordinary Least Square
+    - RANdom SAmple Consensus
 
     The user can choose one of it. Currently, {!OLS} is the best to use. These
     algorithms will estimate the actual execution time of the code segment.
@@ -33,9 +43,13 @@ module OLS : sig
     t
 
   val pp : t Fmt.t
+
   val predictors : t -> string list
+
   val responder : t -> string
+
   val estimates : t -> float list option
+
   val r_square : t -> float option
 end
 
@@ -50,16 +64,24 @@ module RANSAC : sig
     t
 
   val pp : t Fmt.t
+
   val responder : t -> string
+
   val predictor : t -> string
+
   val mean : t -> float
+
   val constant : t -> float
+
   val max : t -> float * float
+
   val min : t -> float * float
+
   val error : t -> float
 end
 
 type 'a t
+(** Type of analyze. *)
 
 val ols : r_square:bool -> bootstrap:int -> predictors:string array -> OLS.t t
 (** [ols ~r_square ~bootstrap ~predictors] is an Ordinary Least Square analyze
@@ -72,8 +94,8 @@ val one :
   'a t -> Measure.witness -> Benchmark.stats * Measurement_raw.t array -> 'a
 (** [one analyze measure (stat, samples)] estimates the actual given [measures]
     for one [predictors]. So, [one analyze time (stat, samples)] where [analyze]
-    is initialized with [run] {i predictor} wants to estimate actual
-    _run_-[time] (or execution time) value. *)
+    is initialized with [run] {i predictor} wants to estimate actual {i
+    run}-[time] (or execution time) value. *)
 
 val all :
   'a t ->

@@ -47,11 +47,9 @@ let test =
 
 let benchmark () =
   let ols =
-    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |]
-  in
+    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |] in
   let instances =
-    Instance.[ minor_allocated; major_allocated; monotonic_clock ]
-  in
+    Instance.[ minor_allocated; major_allocated; monotonic_clock ] in
   let cfg = Benchmark.cfg ~run:3000 ~quota:(Time.second 0.5) () in
   let raw_results = Benchmark.all cfg instances test in
   let results =
@@ -62,8 +60,8 @@ let benchmark () =
 
 let compare k0 k1 =
   let a = ref 0 and b = ref 0 in
-  Scanf.sscanf k0 "%s %d" (fun _ a' -> a := a');
-  Scanf.sscanf k1 "%s %d" (fun _ b' -> b := b');
+  Scanf.sscanf k0 "%s %d" (fun _ a' -> a := a') ;
+  Scanf.sscanf k1 "%s %d" (fun _ b' -> b := b') ;
   !a - !b
 
 let nothing _ = Ok ()
@@ -74,6 +72,5 @@ let () =
     let open Bechamel_js in
     emit ~dst:(Channel stdout) nothing ~compare ~x_label:Measure.run
       ~y_label:(Measure.label Instance.monotonic_clock)
-      results
-  in
+      results in
   match results with Ok () -> () | Error (`Msg err) -> invalid_arg err

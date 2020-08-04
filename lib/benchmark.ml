@@ -10,13 +10,13 @@ let record measure =
 
 let stabilize_garbage_collector () =
   let rec go fail last_heap_live_words =
-    if fail <= 0 then
-      failwith "Unable to stabilize the number of live words in the major heap";
-    Gc.compact ();
+    if fail <= 0
+    then
+      failwith "Unable to stabilize the number of live words in the major heap" ;
+    Gc.compact () ;
     let stat = Gc.stat () in
-    if stat.Gc.live_words <> last_heap_live_words then
-      go (fail - 1) stat.Gc.live_words
-  in
+    if stat.Gc.live_words <> last_heap_live_words
+    then go (fail - 1) stat.Gc.live_words in
   go 10 0
 
 let exceeded_allowed_time allowed_time_span t =
@@ -60,10 +60,10 @@ let run cfg measures test =
   let m0 = Array.create_float length in
   let m1 = Array.create_float length in
 
-  Array.iter Measure.load measures;
+  Array.iter Measure.load measures ;
   let records = Array.init length (fun i -> record measures.(i)) in
 
-  stabilize_garbage_collector ();
+  stabilize_garbage_collector () ;
 
   let init_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
 
@@ -73,36 +73,35 @@ let run cfg measures test =
 
     for i = 0 to length - 1 do
       m0.(i) <- records.(i) ()
-    done;
+    done ;
 
-    runnable fn current_run;
+    runnable fn current_run ;
 
     for i = 0 to length - 1 do
       m1.(i) <- records.(i) ()
-    done;
+    done ;
 
-    m.(current_idx * (length + 1)) <- float_of_int current_run;
+    m.(current_idx * (length + 1)) <- float_of_int current_run ;
     for i = 1 to length do
       m.((current_idx * (length + 1)) + i) <- m1.(i - 1) -. m0.(i - 1)
-    done;
+    done ;
 
     let next =
       match cfg.sampling with
       | `Linear k -> current_run + k
       | `Geometric scale ->
           let next_geometric =
-            int_of_float (float_of_int current_run *. scale)
-          in
-          if next_geometric >= current_run + 1 then next_geometric
-          else current_run + 1
-    in
+            int_of_float (float_of_int current_run *. scale) in
+          if next_geometric >= current_run + 1
+          then next_geometric
+          else current_run + 1 in
 
-    run := next;
+    run := next ;
     incr idx
-  done;
+  done ;
 
   let final_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
-  Array.iter Measure.unload measures;
+  Array.iter Measure.unload measures ;
 
   let samples = !idx in
   let labels = Array.map Measure.label measures in
@@ -116,14 +115,12 @@ let run cfg measures test =
       instances = Array.to_list labels;
       samples;
       time = Mtime.span init_time final_time;
-    }
-  in
+    } in
 
   let measurement_raw idx =
     let run = m.(idx * (length + 1)) in
     let measures = Array.sub m ((idx * (length + 1)) + 1) length in
-    Measurement_raw.make ~measures ~labels run
-  in
+    Measurement_raw.make ~measures ~labels run in
 
   (stats, Array.init samples measurement_raw)
 
@@ -134,5 +131,5 @@ let all cfg measures test =
   for i = 0 to Array.length tests - 1 do
     let results = run cfg measures tests.(i) in
     Hashtbl.add tbl (Test.Elt.name tests.(i)) results
-  done;
+  done ;
   tbl
