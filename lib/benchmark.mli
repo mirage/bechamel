@@ -4,7 +4,7 @@ type configuration
 (** Type of configuration. *)
 
 val cfg :
-  ?run:int ->
+  ?limit:int ->
   ?quota:Mtime.span ->
   ?sampling:sampling ->
   ?stabilize:bool ->
@@ -14,7 +14,7 @@ val cfg :
 (** [cfg ()] returns a configuration needed to run a {i benchmark}. It accepts
     several optional arguments:
 
-    - [run] is the maximum of [run] allowed (default to [3000]).
+    - [limit] is the maximum of [run] allowed (default to [3000]).
     - [quota] is the maximum of time allowed (default to 1 second).
     - [sampling] is the way to grow the [run] metric (default to
       [`Geometric 1.0.1]).
@@ -27,7 +27,7 @@ type stats = {
   sampling : sampling;
   stabilize : bool;
   quota : Mtime.span;
-  run : int;
+  limit : int;
   instances : string list;
   samples : int;
   time : Mtime.span;

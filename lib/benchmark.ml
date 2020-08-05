@@ -30,7 +30,7 @@ type stats = {
   sampling : sampling;
   stabilize : bool;
   quota : Mtime.span;
-  run : int;
+  limit : int;
   instances : string list;
   samples : int;
   time : Mtime.span;
@@ -41,12 +41,12 @@ type configuration = {
   sampling : sampling;
   stabilize : bool;
   quota : Mtime.span;
-  run : int;
+  limit : int;
 }
 
-let cfg ?(run = 3000) ?(quota = Time.second 1.) ?(sampling = `Geometric 1.01)
+let cfg ?(limit = 3000) ?(quota = Time.second 1.) ?(sampling = `Geometric 1.01)
     ?(stabilize = true) ?(start = 1) () =
-  ({ run; start; quota; sampling; stabilize } : configuration)
+  ({ limit; start; quota; sampling; stabilize } : configuration)
 
 let run cfg measures test =
   let idx = ref 0 in
@@ -56,7 +56,7 @@ let run cfg measures test =
 
   let measures = Array.of_list measures in
   let length = Array.length measures in
-  let m = Array.create_float (cfg.run * (length + 1)) in
+  let m = Array.create_float (cfg.limit * (length + 1)) in
   let m0 = Array.create_float length in
   let m1 = Array.create_float length in
 
@@ -67,7 +67,7 @@ let run cfg measures test =
 
   let init_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
 
-  while (not (exceeded_allowed_time cfg.quota init_time)) && !idx < cfg.run do
+  while (not (exceeded_allowed_time cfg.quota init_time)) && !idx < cfg.limit do
     let current_run = !run in
     let current_idx = !idx in
 
@@ -105,13 +105,13 @@ let run cfg measures test =
 
   let samples = !idx in
   let labels = Array.map Measure.label measures in
-  let stats =
+  let stats : stats =
     {
       start = cfg.start;
       sampling = cfg.sampling;
       stabilize = cfg.stabilize;
       quota = cfg.quota;
-      run = cfg.run;
+      limit = cfg.limit;
       instances = Array.to_list labels;
       samples;
       time = Mtime.span init_time final_time;
