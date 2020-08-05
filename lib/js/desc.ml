@@ -44,14 +44,5 @@ let witness : t Json_encoding.encoding =
         t.time ))
     (fun (start, sampling, stabilize, quota, limit, instances, samples, time) ->
       let open Benchmark in
-      {
-        start;
-        sampling;
-        stabilize;
-        quota;
-        limit;
-        instances;
-        samples;
-        time;
-      })
+      { start; sampling; stabilize; quota; limit; instances; samples; time })
     (obj8 start sampling stabilize quota limit instances samples time)

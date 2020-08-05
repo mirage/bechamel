@@ -14,7 +14,7 @@ val cfg :
 (** [cfg ()] returns a configuration needed to run a {i benchmark}. It accepts
     several optional arguments:
 
-    - [limit] is the maximum of [run] allowed (default to [3000]).
+    - [limit] is the maximum of [samples] allowed (default to [3000]).
     - [quota] is the maximum of time allowed (default to 1 second).
     - [sampling] is the way to grow the [run] metric (default to
       [`Geometric 1.0.1]).
