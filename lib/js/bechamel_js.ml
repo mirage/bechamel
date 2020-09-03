@@ -17,7 +17,8 @@ let witness ~compare : t Json_encoding.encoding =
     let dataset = req "dataset" Dataset.witness in
     let ols = req "result" OLS.witness in
     let desc = req "description" Desc.witness in
-    obj4 name desc dataset ols in
+    obj4 name desc dataset ols
+  in
   let series = req "series" (list serie) in
   conv
     (fun t ->
@@ -38,8 +39,8 @@ let witness ~compare : t Json_encoding.encoding =
     (obj3 x_label y_label series)
 
 let of_ols_results ~x_label ~y_label ols_results raws =
-  if not (Hashtbl.mem ols_results y_label)
-  then Rresult.R.error_msgf "y:%s does not exist in OLS results" y_label
+  if not (Hashtbl.mem ols_results y_label) then
+    Rresult.R.error_msgf "y:%s does not exist in OLS results" y_label
   else
     let results = Hashtbl.find ols_results y_label in
     let series = Hashtbl.create (Hashtbl.length results) in
@@ -75,7 +76,8 @@ let flat json : Jsonm.lexeme list =
   and base k = function
     | `A l -> arr [ `As ] k l
     | `O l -> obj [ `Os ] k l
-    | #value as x -> k [ x ] in
+    | #value as x -> k [ x ]
+  in
 
   base (fun l -> l) json
 
@@ -163,9 +165,11 @@ let emit :
           go dst a
       (* XXX(dinosaure): [Jsonm] explains that these cases never occur. *)
       | `Partial, Buffer _ -> assert false
-      | `Partial, Channel _ -> assert false in
+      | `Partial, Channel _ -> assert false
+    in
 
-    go dst a in
+    go dst a
+  in
 
   let open Rresult.R in
   of_ols_results ~x_label ~y_label ols_results raw_results
