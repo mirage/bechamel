@@ -15,9 +15,8 @@ let stabilize_garbage_collector () =
       failwith "Unable to stabilize the number of live words in the major heap" ;
     Gc.compact () ;
     let stat = Gc.stat () in
-    if stat.Gc.live_words <> last_heap_live_words then
-      go (fail - 1) stat.Gc.live_words
-  in
+    if stat.Gc.live_words <> last_heap_live_words
+    then go (fail - 1) stat.Gc.live_words in
   go 10 0
 
 let exceeded_allowed_time allowed_time_span t =
@@ -42,14 +41,23 @@ type configuration = {
   sampling : sampling;
   stabilize : bool;
   quota : Mtime.span;
+  kde : bool;
   limit : int;
 }
 
-let cfg ?(limit = 3000) ?(quota = Time.second 1.) ?(sampling = `Geometric 1.01)
-    ?(stabilize = true) ?(start = 1) () : configuration =
-  { limit; start; quota; sampling; stabilize }
+type t = {
+  stats : stats;
+  lr : Measurement_raw.t array;
+  (* Measurements for linear regressions computations *)
+  kde : Measurement_raw.t array option; (* Measurements for kde *)
+}
 
-let run cfg measures test =
+let cfg ?(limit = 3000) ?(quota = Time.second 1.) ?(kde = false)
+    ?(sampling = `Geometric 1.01) ?(stabilize = true) ?(start = 1) () :
+    configuration =
+  { limit; start; quota; sampling; kde; stabilize }
+
+let run cfg measures test : t =
   let idx = ref 0 in
   let run = ref cfg.start in
   let (Test.V init) = Test.Elt.fn test in
@@ -61,22 +69,27 @@ let run cfg measures test =
   let m0 = Array.create_float length in
   let m1 = Array.create_float length in
 
-  Array.iter Measure.load measures;
+  Array.iter Measure.load measures ;
   let records = Array.init length (fun i -> record measures.(i)) in
 
   stabilize_garbage_collector () ;
 
   let init_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
 
+  let total_run = ref 0 in
+
   while (not (exceeded_allowed_time cfg.quota init_time)) && !idx < cfg.limit do
     let current_run = !run in
     let current_idx = !idx in
 
+    (* The returned measurements are a difference betwen a measurement [m0]
+       taken before running the tested function [fn] and a measurement taken
+       after [m1]. *)
     for i = 0 to length - 1 do
       m0.(i) <- records.(i) ()
     done ;
 
-    runnable fn current_run;
+    runnable fn current_run ;
 
     for i = 0 to length - 1 do
       m1.(i) <- records.(i) ()
@@ -97,16 +110,60 @@ let run cfg measures test =
           then next_geometric
           else current_run + 1 in
 
+    total_run := !total_run + !run ;
     run := next ;
     incr idx
   done ;
 
-  let final_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
-  Array.iter Measure.unload measures;
-
   let samples = !idx in
   let labels = Array.map Measure.label measures in
-  let stats : stats =
+
+  let measurement_raw idx =
+    let run = m.(idx * (length + 1)) in
+    let measures = Array.sub m ((idx * (length + 1)) + 1) length in
+    Measurement_raw.make ~measures ~labels run in
+  let lr_raw = Array.init samples measurement_raw in
+
+  (* Additional measurement for kde, if requested. Note that if these
+     measurements go through, the time limit is twice the one without it.*)
+  let kde_raw =
+    if cfg.kde
+    then (
+      let mkde = Array.create_float (cfg.limit * length) in
+      let init_time' = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
+      let current_idx = ref 0 in
+      while
+        (not (exceeded_allowed_time cfg.quota init_time'))
+        && !current_idx < cfg.limit
+      do
+        for i = 0 to length - 1 do
+          m0.(i) <- records.(i) ()
+        done ;
+
+        ignore (Sys.opaque_identity (fn ())) ;
+
+        for i = 0 to length - 1 do
+          m1.(i) <- records.(i) ()
+        done ;
+
+        for i = 0 to length - 1 do
+          mkde.((!current_idx * length) + i) <- m1.(i) -. m0.(i)
+        done ;
+
+        total_run := !total_run + !run ;
+        incr current_idx
+      done ;
+      let kde_raw idx =
+        let measures = Array.sub mkde (idx * length) length in
+        Measurement_raw.make ~measures ~labels 1. in
+
+      Some (Array.init !current_idx kde_raw))
+    else None in
+
+  let final_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
+  Array.iter Measure.unload measures ;
+
+  let stats =
     {
       start = cfg.start;
       sampling = cfg.sampling;
@@ -118,13 +175,7 @@ let run cfg measures test =
       time = Mtime.span init_time final_time;
     } in
 
-  let measurement_raw idx =
-    let run = m.(idx * (length + 1)) in
-    let measures = Array.sub m ((idx * (length + 1)) + 1) length in
-    Measurement_raw.make ~measures ~labels run
-  in
-
-  (stats, Array.init samples measurement_raw)
+  { stats; lr = lr_raw; kde = kde_raw }
 
 let all cfg measures test =
   let tests = Array.of_list (Test.elements test) in

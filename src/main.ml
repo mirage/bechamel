@@ -58,7 +58,7 @@ let benchmark () =
     Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |] in
   let instances =
     Instance.[ minor_allocated; major_allocated; monotonic_clock ] in
-  let cfg = Benchmark.cfg ~limit:3000 ~quota:(Time.second 0.5) () in
+  let cfg = Benchmark.cfg ~run:1000 ~quota:(Time.second 0.5) ~kde:true () in
   let raw_results = Benchmark.all cfg instances test in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances
