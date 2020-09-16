@@ -41,18 +41,17 @@ type configuration = {
   sampling : sampling;
   stabilize : bool;
   quota : Mtime.span;
-  kde : bool;
+  kde : int option;
   limit : int;
 }
 
 type t = {
   stats : stats;
   lr : Measurement_raw.t array;
-  (* Measurements for linear regressions computations *)
-  kde : Measurement_raw.t array option; (* Measurements for kde *)
+  kde : Measurement_raw.t array option;
 }
 
-let cfg ?(limit = 3000) ?(quota = Time.second 1.) ?(kde = false)
+let cfg ?(limit = 3000) ?(quota = Time.second 1.) ?(kde = None)
     ?(sampling = `Geometric 1.01) ?(stabilize = true) ?(start = 1) () :
     configuration =
   { limit; start; quota; sampling; kde; stabilize }
@@ -127,38 +126,38 @@ let run cfg measures test : t =
   (* Additional measurement for kde, if requested. Note that if these
      measurements go through, the time limit is twice the one without it.*)
   let kde_raw =
-    if cfg.kde
-    then (
-      let mkde = Array.create_float (cfg.limit * length) in
-      let init_time' = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
-      let current_idx = ref 0 in
-      while
-        (not (exceeded_allowed_time cfg.quota init_time'))
-        && !current_idx < cfg.limit
-      do
-        for i = 0 to length - 1 do
-          m0.(i) <- records.(i) ()
+    match cfg.kde with
+    | None -> None
+    | Some kde_limit ->
+        let mkde = Array.create_float (kde_limit * length) in
+        let init_time' = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
+        let current_idx = ref 0 in
+        while
+          (not (exceeded_allowed_time cfg.quota init_time'))
+          && !current_idx < kde_limit
+        do
+          for i = 0 to length - 1 do
+            m0.(i) <- records.(i) ()
+          done ;
+
+          ignore (Sys.opaque_identity (fn ())) ;
+
+          for i = 0 to length - 1 do
+            m1.(i) <- records.(i) ()
+          done ;
+
+          for i = 0 to length - 1 do
+            mkde.((!current_idx * length) + i) <- m1.(i) -. m0.(i)
+          done ;
+
+          total_run := !total_run + !run ;
+          incr current_idx
         done ;
+        let kde_raw idx =
+          let measures = Array.sub mkde (idx * length) length in
+          Measurement_raw.make ~measures ~labels 1. in
 
-        ignore (Sys.opaque_identity (fn ())) ;
-
-        for i = 0 to length - 1 do
-          m1.(i) <- records.(i) ()
-        done ;
-
-        for i = 0 to length - 1 do
-          mkde.((!current_idx * length) + i) <- m1.(i) -. m0.(i)
-        done ;
-
-        total_run := !total_run + !run ;
-        incr current_idx
-      done ;
-      let kde_raw idx =
-        let measures = Array.sub mkde (idx * length) length in
-        Measurement_raw.make ~measures ~labels 1. in
-
-      Some (Array.init !current_idx kde_raw))
-    else None in
+        Some (Array.init !current_idx kde_raw) in
 
   let final_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
   Array.iter Measure.unload measures ;

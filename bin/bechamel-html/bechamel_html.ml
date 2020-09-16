@@ -13,7 +13,7 @@ let string_find s target =
   if String.length target = 0 then None else loop 0
 
 let head, tail =
-  let data = Html_file.data in
+  let data = Js_file.data in
   let separator = "//BECHAMEL_CONTENTS//" in
   match string_find data separator with
   | None -> failwith "Separator not found"
