@@ -48,9 +48,23 @@ val make_indexed :
 
       let test =
         make_indexed ~name:"make_list" ~args:[ 0; 10; 100; 100 ] make_list
-    ]} *)
+    ]}
+
+    This kind of test is helpful to see results of the {b same} implementation
+    with differents arguments (indexed by the given [int]). *)
 
 val make_grouped : name:string -> ?fmt:fmt_grouped -> t list -> t
+(** [make_grouped ~name ~fmt tests] is naming benchmarks. Name of each benchmark
+    is [Fmt.strf fmt name arg] (default to [%s/%s]).
+
+    {[
+      let f0 = Test.make ~name:"fib1" ... ;; let f1 = Test.make ~name:"fib0"
+      ... ;;
+
+      let test = Test.make_grouped ~name:"fibonacci" [ f0; f1; ] ;;
+    ]}
+
+    This kind of test is helpful to compare results betwen many implementations. *)
 
 val name : t -> string
 (** [name t] returns the name of the test. *)

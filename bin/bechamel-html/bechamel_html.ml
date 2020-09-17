@@ -29,10 +29,9 @@ let stdin_to_stdout () =
   with End_of_file -> ()
 
 let () =
-  (* Read first line
-     so we don't show [head] if user forgot to redirect its json file
-     and if it's already end of input, it will be an explicit uncaught exception
-     instead of generating an invalid HTML file *)
+  (* Read first line so we don't show [head] if user forgot to redirect its json
+     file and if it's already end of input, it will be an explicit uncaught
+     exception instead of generating an invalid HTML file *)
   let first_line = read_line () in
   print_string head ;
   print_string "contents = " ;

@@ -5,8 +5,12 @@
 
 (rule
  (targets output.json)
- (action (with-stdout-to %{targets} (run ./main.exe))))
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ./main.exe))))
 
 (rule
  (targets output.html)
- (action (system "%{bin:bechamel-html} < %{dep:output.json} > %{targets}")))
+ (action
+  (system "%{bin:bechamel-html} < %{dep:output.json} > %{targets}")))

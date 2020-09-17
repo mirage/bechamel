@@ -27,7 +27,7 @@ let witness : t Json_encoding.encoding =
   let sampling = req "sampling" sampling_witness in
   let stabilize = req "stabilize" bool in
   let quota = req "quota" mtime_witness in
-  let run = req "run" int in
+  let limit = req "limit" int in
   let instances = req "instances" (list label_witness) in
   let samples = req "samples" int in
   let time = req "time" mtime_witness in
@@ -38,20 +38,11 @@ let witness : t Json_encoding.encoding =
         t.sampling,
         t.stabilize,
         t.quota,
-        t.run,
+        t.limit,
         t.instances,
         t.samples,
         t.time ))
-    (fun (start, sampling, stabilize, quota, run', instances, samples, time) ->
+    (fun (start, sampling, stabilize, quota, limit, instances, samples, time) ->
       let open Benchmark in
-      {
-        start;
-        sampling;
-        stabilize;
-        quota;
-        run = run';
-        instances;
-        samples;
-        time;
-      })
-    (obj8 start sampling stabilize quota run instances samples time)
+      { start; sampling; stabilize; quota; limit; instances; samples; time })
+    (obj8 start sampling stabilize quota limit instances samples time)

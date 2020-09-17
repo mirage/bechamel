@@ -5,7 +5,8 @@
  (public_name bechamel-html))
 
 (rule
- (with-stdout-to html_file.ml
+ (with-stdout-to
+  html_file.ml
   (progn
    (echo "let data = {html_file|")
    (cat ../../html/index.html)
