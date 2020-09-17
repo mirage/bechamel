@@ -19,7 +19,8 @@ let col_inner_prod t j1 j2 =
 
 let qr_in_place a =
   let m = Array.length a in
-  if m = 0 then ([||], [||])
+  if m = 0
+  then ([||], [||])
   else
     let n = Array.length a.(0) in
     let r = Array.make_matrix n n 0. in
@@ -46,25 +47,25 @@ let qr ?(in_place = false) a =
 
 let mul_mv ?(trans = false) a x =
   let rows = Array.length a in
-  if rows = 0 then [||]
+  if rows = 0
+  then [||]
   else
     let cols = Array.length a.(0) in
     let m, n, get =
-      if trans then
+      if trans
+      then
         let get i j = a.(j).(i) in
         (cols, rows, get)
       else
         let get i j = a.(i).(j) in
-        (rows, cols, get)
-    in
+        (rows, cols, get) in
     if n <> Array.length x then failwith "Dimension mismatch" ;
     let result = Array.make m 0. in
     for i = 0 to m - 1 do
       let v, _ =
         Array.fold_left
           (fun (acc, j) x -> (acc +. (get i j *. x), succ j))
-          (0., 0) x
-      in
+          (0., 0) x in
       result.(i) <- v
     done ;
     result
@@ -73,12 +74,14 @@ let is_nan v = match classify_float v with FP_nan -> true | _ -> false
 
 let triu_solve r b =
   let m = Array.length b in
-  if m <> Array.length r then
+  if m <> Array.length r
+  then
     Rresult.R.error_msgf
       "triu_solve R b requires R to be square with same number of rows as b"
-  else if m = 0 then Rresult.R.ok [||]
-  else if m <> Array.length r.(0) then
-    Rresult.R.error_msgf "triu_solve R b requires R to be a square"
+  else if m = 0
+  then Rresult.R.ok [||]
+  else if m <> Array.length r.(0)
+  then Rresult.R.error_msgf "triu_solve R b requires R to be a square"
   else
     let sol = Array.copy b in
     for i = m - 1 downto 0 do
@@ -87,8 +90,8 @@ let triu_solve r b =
         sol.(j) <- sol.(j) -. (r.(j).(i) *. sol.(i))
       done
     done ;
-    if Array.exists is_nan sol then
-      Rresult.R.error_msgf "triu_solve detected NaN result"
+    if Array.exists is_nan sol
+    then Rresult.R.error_msgf "triu_solve detected NaN result"
     else Rresult.R.ok sol
 
 let ols ?(in_place = false) a b =

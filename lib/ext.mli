@@ -4,10 +4,12 @@ module Make (Functor : S.FUNCTOR) : sig
 
   module type Extension = sig
     type x
+
     type t += T of x
   end
 
   type 'a extension = (module Extension with type x = 'a)
+
   type instance = V : 'a * 'a Functor.t -> instance
 
   module Injection (X : sig
@@ -17,5 +19,6 @@ module Make (Functor : S.FUNCTOR) : sig
   end) : Extension with type x = X.t
 
   val inj : 'a Functor.t -> 'a extension
+
   val prj : t -> instance
 end

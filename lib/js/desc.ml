@@ -4,14 +4,20 @@ type t = Benchmark.stats
 
 let sampling_witness : Benchmark.sampling Json_encoding.encoding =
   let open Json_encoding in
-  let a = case float (function `Geometric x -> Some x | _ -> None) (fun x -> `Geometric x) in
-  let b = case int (function `Linear x -> Some x | _ -> None) (fun x -> `Linear x) in
-  union [ a; b; ]
+  let a =
+    case float
+      (function `Geometric x -> Some x | _ -> None)
+      (fun x -> `Geometric x) in
+  let b =
+    case int (function `Linear x -> Some x | _ -> None) (fun x -> `Linear x)
+  in
+  union [ a; b ]
 
 let mtime_witness : Mtime.span Json_encoding.encoding =
   let open Json_encoding in
   conv Mtime.Span.to_uint64_ns Mtime.Span.of_uint64_ns int53
-    (* XXX(dinosaure): fix [int53]. *)
+
+(* XXX(dinosaure): fix [int53]. *)
 
 let label_witness : string Json_encoding.encoding = Json_encoding.string
 
@@ -27,9 +33,25 @@ let witness : t Json_encoding.encoding =
   let time = req "time" mtime_witness in
   conv
     (fun (t : t) ->
-       let open Benchmark in
-       t.start, t.sampling, t.stabilize, t.quota, t.run, t.instances, t.samples, t.time)
+      let open Benchmark in
+      ( t.start,
+        t.sampling,
+        t.stabilize,
+        t.quota,
+        t.run,
+        t.instances,
+        t.samples,
+        t.time ))
     (fun (start, sampling, stabilize, quota, run', instances, samples, time) ->
-       let open Benchmark in
-       { start; sampling; stabilize; quota; run= run'; instances; samples; time })
+      let open Benchmark in
+      {
+        start;
+        sampling;
+        stabilize;
+        quota;
+        run = run';
+        instances;
+        samples;
+        time;
+      })
     (obj8 start sampling stabilize quota run instances samples time)
