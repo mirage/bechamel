@@ -91,6 +91,10 @@ val ols : r_square:bool -> bootstrap:int -> predictors:string array -> OLS.t t
 val ransac : filter_outliers:bool -> predictor:string -> RANSAC.t t
 
 val one : 'a t -> Measure.witness -> Benchmark.t -> 'a
+(** [one analyze measure (stat, samples)] estimates the actual given [measures]
+    for one [predictors]. So, [one analyze time (stat, samples)] where [analyze]
+    is initialized with [run] {i predictor} wants to estimate actual
+    {i run}-[time] (or execution time) value. *)
 
 val all :
   'a t ->
