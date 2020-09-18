@@ -49,8 +49,7 @@ type stats = {
 type t = {
   stats : stats;
   lr : Measurement_raw.t array;
-  (* Measurements for linear regressions computations *)
-  kde : Measurement_raw.t array option; (* Measurements for kde *)
+  kde : Measurement_raw.t array option;
 }
 (** Results of one benchmark:
 
