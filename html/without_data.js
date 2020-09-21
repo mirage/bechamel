@@ -446,7 +446,6 @@ function render(inputs) {
 		const minX = d3.max([0, min-max_slider]),
 		      maxX = max+max_slider;
 
-
 		//X axis is the same for both graphs (histogram and kde)
 		const xscale = d3.scaleLinear()
 		      .range([0, innerW])
@@ -502,15 +501,21 @@ function render(inputs) {
 	              .attr("class", "axis")
 	              .call(yAxis);
 
+		// X Axis title
+		pdfgraph.append("text")
+		    .attr("class", "axisTitle")
+		    .attr("x", innerW/2)
+		    .attr("y", innerH+40)
+		    .text("Estimated "+inputs.yLabel);
+
 		plot_chosen_graph(d3.select(this), "hist");
 
 		function plot_chosen_graph(container, choice) {
 
-		    let rects =
-			container.selectAll(".bar").remove();
 
-		    let path =
-			container.select(".mypath").remove();
+		    container.selectAll(".bar").remove();
+		    container.select(".mypath").remove();
+		    container.select(".ytitle").remove();
 
 		    // Erasing control panels if it exists and initializing it
 		    const control_container = d3.select("#kde-controler-"+i);
@@ -525,14 +530,23 @@ function render(inputs) {
 
 		    //Hist part
 		    if (choice=="hist") {
-			//Defined yAxis
+			// Defined yAxis
 			yscale.domain([maxYhist, 0]).nice();
 			yAxis.scale(yscale);
 			gyAxis.call(yAxis);
 
+			// y Axis title
+			pdfgraph.append("text")
+			    .attr("transform-origin", "10 "+(innerH/2))
+			    .attr("class", "axisTitle ytitle")
+			    .attr("x", 10)
+			    .attr("y", innerH/2)
+			    .text("Count");
+
 			const barwidth = vslider;
 
-			const update_hist = plot_histogram(pdfgraph, data, barwidth, xscale, yscale);
+			const update_hist =
+			      plot_histogram(pdfgraph, data, barwidth, xscale, yscale);
 
 			//slider
 			control_container
@@ -565,6 +579,14 @@ function render(inputs) {
 			yscale.domain([maxYkde, 0]).nice();
 			yAxis.scale(yscale);
 			gyAxis.call(yAxis);
+
+			// y Axis title
+			pdfgraph.append("text")
+			    .attr("transform-origin", "10 "+(innerH/2))
+			    .attr("class", "axisTitle ytitle")
+			    .attr("x", +10)
+			    .attr("y", innerH/2)
+			    .text("Density");
 
 			const bandwidth = vslider;
 			const update_kde = plot_kde(pdfgraph, data, bandwidth, xscale, yscale, x);
