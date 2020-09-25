@@ -317,10 +317,8 @@ let ols ~r_square ~bootstrap ~predictors =
 
 let ransac ~filter_outliers ~predictor = RANSAC { filter_outliers; predictor }
 
-let one :
-    type a.
-    a t -> Measure.witness -> Benchmark.stats * Measurement_raw.t array -> a =
- fun kind e (_, m) ->
+let one : type a. a t -> Measure.witness -> Benchmark.t -> a =
+ fun kind e { lr = m; _ } ->
   let label = Measure.label e in
   match kind with
   | OLS { predictors; r_square; bootstrap } ->
@@ -332,7 +330,7 @@ let all :
     type a.
     a t ->
     Measure.witness ->
-    (string, Benchmark.stats * Measurement_raw.t array) Hashtbl.t ->
+    (string, Benchmark.t) Hashtbl.t ->
     (string, a) Hashtbl.t =
  fun kind e ms ->
   let ret = Hashtbl.create (Hashtbl.length ms) in

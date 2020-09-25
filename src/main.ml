@@ -32,9 +32,10 @@ let test =
    [Benchmark.all], an analyse is needed to infer measures of one call of your
    test.
 
-   [Bechamel] asks 3 things: - what you want to record (see [instances]) - how
-   you want to analyse (see [ols]) - how you want to benchmark your test (see
-   [cfg])
+   [Bechamel] asks 3 things:
+   - what you want to record (see [instances])
+   - how you want to analyse (see [ols])
+   - how you want to benchmark your test (see [cfg])
 
    The core of [Bechamel] (see [Bechamel.Toolkit]) has some possible measures
    such as the [monotonic-clock] to see time performances.
@@ -58,7 +59,7 @@ let benchmark () =
     Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |] in
   let instances =
     Instance.[ minor_allocated; major_allocated; monotonic_clock ] in
-  let cfg = Benchmark.cfg ~limit:3000 ~quota:(Time.second 0.5) () in
+  let cfg = Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) () in
   let raw_results = Benchmark.all cfg instances test in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances

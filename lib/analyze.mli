@@ -90,8 +90,7 @@ val ols : r_square:bool -> bootstrap:int -> predictors:string array -> OLS.t t
 
 val ransac : filter_outliers:bool -> predictor:string -> RANSAC.t t
 
-val one :
-  'a t -> Measure.witness -> Benchmark.stats * Measurement_raw.t array -> 'a
+val one : 'a t -> Measure.witness -> Benchmark.t -> 'a
 (** [one analyze measure (stat, samples)] estimates the actual given [measures]
     for one [predictors]. So, [one analyze time (stat, samples)] where [analyze]
     is initialized with [run] {i predictor} wants to estimate actual
@@ -100,7 +99,7 @@ val one :
 val all :
   'a t ->
   Measure.witness ->
-  (string, Benchmark.stats * Measurement_raw.t array) Hashtbl.t ->
+  (string, Benchmark.t) Hashtbl.t ->
   (string, 'a) Hashtbl.t
 
 val merge :

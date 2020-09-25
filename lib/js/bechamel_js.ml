@@ -3,7 +3,7 @@ open Bechamel
 type t = {
   x_label : string;
   y_label : string;
-  series : (string, Desc.t * Dataset.t * OLS.t) Hashtbl.t;
+  series : (string, Desc.t * Dataset.t * KDE.t option * OLS.t) Hashtbl.t;
 }
 
 let label_witness : string Json_encoding.encoding = Json_encoding.string
@@ -15,24 +15,26 @@ let witness ~compare : t Json_encoding.encoding =
   let serie =
     let name = req "name" string in
     let dataset = req "dataset" Dataset.witness in
+    let kde = opt "kde" KDE.witness in
     let ols = req "result" OLS.witness in
     let desc = req "description" Desc.witness in
-    obj4 name desc dataset ols in
+    obj5 name desc dataset kde ols in
   let series = req "series" (list serie) in
   conv
     (fun t ->
       let l =
         Hashtbl.fold
-          (fun k (desc, dataset, ols) a -> (k, desc, dataset, ols) :: a)
+          (fun k (desc, dataset, kde, ols) a ->
+            (k, desc, dataset, kde, ols) :: a)
           t.series [] in
       ( t.x_label,
         t.y_label,
-        List.sort (fun (k0, _, _, _) (k1, _, _, _) -> compare k0 k1) l ))
+        List.sort (fun (k0, _, _, _, _) (k1, _, _, _, _) -> compare k0 k1) l ))
     (fun (x_label, y_label, l) ->
       let series = Hashtbl.create (List.length l) in
       List.iter
-        (fun (k, desc, dataset, ols) ->
-          Hashtbl.add series k (desc, dataset, ols))
+        (fun (k, desc, dataset, kde, ols) ->
+          Hashtbl.add series k (desc, dataset, kde, ols))
         l ;
       { x_label; y_label; series })
     (obj3 x_label y_label series)
@@ -48,13 +50,16 @@ let of_ols_results ~x_label ~y_label ols_results raws =
       Hashtbl.iter
         (fun serie ols ->
           let open Rresult.R in
-          let stats, raws = Hashtbl.find raws serie in
+          let Benchmark.{ stats; lr = raws; kde = raws_kde } =
+            Hashtbl.find raws serie in
           let res =
             Dataset.of_measurement_raws ~x_label ~y_label raws >>= fun raws ->
+            KDE.of_kde_raws ~label:y_label raws_kde >>= fun raws_kde ->
             OLS.of_ols_result ~x_label ~y_label ols >>| fun ols ->
-            (stats, raws, ols) in
+            (stats, raws, raws_kde, ols) in
           match res with
-          | Ok (stats, raws, ols) -> Hashtbl.add series serie (stats, raws, ols)
+          | Ok (stats, raws, raws_kde, ols) ->
+              Hashtbl.add series serie (stats, raws, raws_kde, ols)
           | Error _ as err -> Rresult.R.error_msg_to_invalid_arg err)
         results ;
       Ok { x_label; y_label; series }
@@ -100,7 +105,7 @@ let channel filename =
   let oc = open_out filename in
   Channel oc
 
-type raws = (string, Benchmark.stats * Measurement_raw.t array) Hashtbl.t
+type raws = (string, Benchmark.t) Hashtbl.t
 
 type ols_results = (string, (string, Analyze.OLS.t) Hashtbl.t) Hashtbl.t
 
