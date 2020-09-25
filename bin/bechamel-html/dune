@@ -5,21 +5,24 @@
  (public_name bechamel-html))
 
 (rule
- (with-stdout-to js_file.ml
+ (with-stdout-to
+  js_file.ml
   (progn
    (echo "let data = {js_file|")
    (cat ../../html/without_data.js)
    (echo "|js_file}"))))
 
 (rule
- (with-stdout-to html_file.ml
+ (with-stdout-to
+  html_file.ml
   (progn
    (echo "let data = {html_file|")
    (cat ../../html/index.html)
    (echo "|html_file}"))))
 
 (rule
- (with-stdout-to css_file.ml
+ (with-stdout-to
+  css_file.ml
   (progn
    (echo "let data = {css_file|")
    (cat ../../html/style.css)
