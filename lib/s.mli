@@ -7,6 +7,8 @@ module type MEASURE = sig
 
   val label : witness -> string
 
+  val unit : witness -> string
+
   val make : unit -> witness
 
   val load : witness -> unit

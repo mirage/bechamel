@@ -10,6 +10,8 @@ module One = struct
   let get () = 1.
 
   let label () = "one"
+
+  let unit () = "one"
 end
 
 module Minor_allocated = struct
@@ -24,6 +26,8 @@ module Minor_allocated = struct
   let get () = (Gc.quick_stat ()).minor_words
 
   let label () = "minor-allocated"
+
+  let unit () = "mnw"
 end
 
 module Major_allocated = struct
@@ -38,6 +42,8 @@ module Major_allocated = struct
   let get () = (Gc.quick_stat ()).major_words
 
   let label () = "major-allocated"
+
+  let unit () = "mjw"
 end
 
 module Promoted = struct
@@ -52,6 +58,8 @@ module Promoted = struct
   let get () = (Gc.quick_stat ()).promoted_words
 
   let label () = "promoted"
+
+  let unit () = "p"
 end
 
 module Compaction = struct
@@ -66,6 +74,8 @@ module Compaction = struct
   let get () = float_of_int (Gc.quick_stat ()).compactions
 
   let label () = "compaction"
+
+  let unit () = "compact"
 end
 
 module Minor_collection = struct
@@ -80,6 +90,8 @@ module Minor_collection = struct
   let get () = float_of_int (Gc.quick_stat ()).minor_collections
 
   let label () = "minor-collection"
+
+  let unit () = "mn-collect"
 end
 
 module Major_collection = struct
@@ -94,6 +106,8 @@ module Major_collection = struct
   let get () = float_of_int (Gc.quick_stat ()).major_collections
 
   let label () = "major-collection"
+
+  let unit () = "mj-collect"
 end
 
 module Monotonic_clock = struct
@@ -108,6 +122,8 @@ module Monotonic_clock = struct
   let get () = Int64.to_float (Monotonic_clock.now ())
 
   let label () = "monotonic-clock"
+
+  let unit () = "ns"
 end
 
 module Extension = struct
