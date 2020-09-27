@@ -26,6 +26,8 @@ val unload : witness -> unit
 val label : witness -> string
 (** [label w] is the name of the underlying measure represented by [w]. *)
 
+val unit : witness -> string
+
 type value = V : 'w * 'w impl -> value
 
 val prj : witness -> value

@@ -34,6 +34,11 @@ let label : witness -> string =
   let (Ext.V (m, (module M))) = Ext.prj v in
   M.label m
 
+let unit : witness -> string =
+ fun v ->
+  let (Ext.V (m, (module M))) = Ext.prj v in
+  M.unit m
+
 type value = Ext.instance = V : 'w * 'w impl -> value
 
 let prj w = Ext.prj w
