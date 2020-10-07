@@ -20,8 +20,9 @@ let stabilize_garbage_collector () =
   go 10 0
 
 let exceeded_allowed_time allowed_time_span t =
-  let t' = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
-  Mtime.Span.compare (Mtime.span t t') allowed_time_span > 0
+  let t' = Monotonic_clock.now () in
+  let t' = Time.of_uint64_ns t' in
+  Time.span_compare (Time.span t t') allowed_time_span > 0
 
 type sampling = [ `Linear of int | `Geometric of float ]
 
@@ -29,18 +30,18 @@ type stats = {
   start : int;
   sampling : sampling;
   stabilize : bool;
-  quota : Mtime.span;
+  quota : Time.span;
   limit : int;
   instances : string list;
   samples : int;
-  time : Mtime.span;
+  time : Time.span;
 }
 
 type configuration = {
   start : int;
   sampling : sampling;
   stabilize : bool;
-  quota : Mtime.span;
+  quota : Time.span;
   kde : int option;
   limit : int;
 }
@@ -73,7 +74,7 @@ let run cfg measures test : t =
 
   stabilize_garbage_collector () ;
 
-  let init_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
+  let init_time = Time.of_uint64_ns (Monotonic_clock.now ()) in
 
   let total_run = ref 0 in
 
@@ -130,7 +131,7 @@ let run cfg measures test : t =
     | None -> None
     | Some kde_limit ->
         let mkde = Array.create_float (kde_limit * length) in
-        let init_time' = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
+        let init_time' = Time.of_uint64_ns (Monotonic_clock.now ()) in
         let current_idx = ref 0 in
         while
           (not (exceeded_allowed_time cfg.quota init_time'))
@@ -159,7 +160,7 @@ let run cfg measures test : t =
 
         Some (Array.init !current_idx kde_raw) in
 
-  let final_time = Mtime.of_uint64_ns (Monotonic_clock.now ()) in
+  let final_time = Time.of_uint64_ns (Monotonic_clock.now ()) in
   Array.iter Measure.unload measures ;
 
   let stats =
@@ -171,7 +172,7 @@ let run cfg measures test : t =
       limit = cfg.limit;
       instances = Array.to_list labels;
       samples;
-      time = Mtime.span init_time final_time;
+      time = Time.span init_time final_time;
     } in
 
   { stats; lr = lr_raw; kde = kde_raw }

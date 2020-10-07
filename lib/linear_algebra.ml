@@ -2,6 +2,8 @@
  * I believe owner is Jane Street Group, LLC <opensource@janestreet.com>
  *)
 
+let error_msgf fmt = Format.kasprintf (fun err -> Error (`Msg err)) fmt
+
 let col_norm a column =
   let acc = ref 0. in
   for i = 0 to Array.length a - 1 do
@@ -76,12 +78,12 @@ let triu_solve r b =
   let m = Array.length b in
   if m <> Array.length r
   then
-    Rresult.R.error_msgf
+    error_msgf
       "triu_solve R b requires R to be square with same number of rows as b"
   else if m = 0
-  then Rresult.R.ok [||]
+  then Ok [||]
   else if m <> Array.length r.(0)
-  then Rresult.R.error_msgf "triu_solve R b requires R to be a square"
+  then error_msgf "triu_solve R b requires R to be a square"
   else
     let sol = Array.copy b in
     for i = m - 1 downto 0 do
@@ -91,8 +93,8 @@ let triu_solve r b =
       done
     done ;
     if Array.exists is_nan sol
-    then Rresult.R.error_msgf "triu_solve detected NaN result"
-    else Rresult.R.ok sol
+    then error_msgf "triu_solve detected NaN result"
+    else Ok sol
 
 let ols ?(in_place = false) a b =
   let q, r = qr ~in_place a in

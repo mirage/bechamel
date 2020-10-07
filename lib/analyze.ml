@@ -20,7 +20,7 @@ module OLS = struct
   type t = {
     predictors : string array;
     responder : string;
-    value : (v, Rresult.R.msg) result;
+    value : (v, [ `Msg of string ]) result;
   }
 
   and v = {
@@ -144,7 +144,7 @@ module OLS = struct
   let pp ppf x =
     match x.value with
     | Ok v -> pp ~predictors:x.predictors ~responder:x.responder ppf v
-    | Error err -> Rresult.R.pp_msg ppf err
+    | Error (`Msg err) -> Format.fprintf ppf "%s" err
 
   let predictors { predictors; _ } = Array.to_list predictors
 

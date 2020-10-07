@@ -1,0 +1,20 @@
+opam-version: "2.0"
+name:         "mperf"
+version:      "0.1"
+maintainer:   [ "Romain Calascibetta <romain.calascibetta@gmail.com>" ]
+authors:      [ "Vincent Bernardoff <vincent.bernardoff@ocamlpro.com>" "Pierre Chambart <pierre.chambart@ocamlpro.com>" ]
+homepage:     "http://github.com/dinosaure/bechamel"
+dev-repo:     "git://github.com/dinosaure/bechamel"
+bug-reports:  "http://github.com/dinosaure/bechamel/issues"
+license:      "GPLv2"
+synopsis:     "Bindings to Linux perf's metrics"
+
+build: [
+  [ "dune" "subst" ] {pinned}
+  [ "dune" "build" "-p" name "-j" jobs ]
+]
+
+depends: [
+  "dune" {>= "2.0.0"}
+  "base-unix"
+]

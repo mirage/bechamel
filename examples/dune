@@ -1,0 +1,32 @@
+(executable
+ (name list)
+ (modules list)
+ (public_name bechamel-notty.examples.list)
+ (package bechamel-notty)
+ (libraries bechamel notty.unix bechamel-notty))
+
+(executable
+ (name sqrt)
+ (modules sqrt)
+ (public_name bechamel-perf.examples.sqrt)
+ (package bechamel-perf)
+ (libraries bechamel fmt bechamel-perf))
+
+(executable
+ (name fact)
+ (modules fact)
+ (public_name bechamel-js.examples.fact)
+ (package bechamel-js)
+ (libraries bechamel bechamel-js))
+
+(rule
+ (targets fact.json)
+ (action
+  (with-stdout-to
+   %{targets}
+   (run ./fact.exe))))
+
+(rule
+ (targets fact.html)
+ (action
+  (system "%{bin:bechamel-html} < %{dep:fact.json} > %{targets}")))
