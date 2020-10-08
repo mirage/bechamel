@@ -19,3 +19,5 @@ depends: [
   "dune" {>= "2.0.0"}
   "base-unix"
 ]
+
+available: [ os = "linux" ]
