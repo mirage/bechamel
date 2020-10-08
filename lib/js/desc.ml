@@ -13,9 +13,9 @@ let sampling_witness : Benchmark.sampling Json_encoding.encoding =
   in
   union [ a; b ]
 
-let mtime_witness : Mtime.span Json_encoding.encoding =
+let mtime_witness : Time.span Json_encoding.encoding =
   let open Json_encoding in
-  conv Mtime.Span.to_uint64_ns Mtime.Span.of_uint64_ns int53
+  conv Time.span_to_uint64_ns Time.span_of_uint64_ns int53
 
 (* XXX(dinosaure): fix [int53]. *)
 

@@ -1,0 +1,7 @@
+(library
+ (name mperf)
+ (public_name mperf)
+ (foreign_stubs
+  (language c)
+  (names mperf_stubs))
+ (libraries unix))

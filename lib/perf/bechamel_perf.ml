@@ -1,3 +1,5 @@
+module Perf = Mperf
+
 module Make (X : sig
   val kind : Perf.Attr.Kind.t
 end) =
@@ -12,6 +14,7 @@ struct
     let kind = Perf.kind witness in
     Perf.Attr.Kind.to_string kind
 
+  let unit = label
   let get witness = Int64.to_float (Perf.read witness)
 end
 

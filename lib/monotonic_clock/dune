@@ -19,5 +19,4 @@
   (language c)
   (flags
    (:include monotonic_clock.sexp))
-  (names monotonic_clock_stubs))
- (libraries fmt))
+  (names monotonic_clock_stubs)))

@@ -5,7 +5,7 @@ type configuration
 
 val cfg :
   ?limit:int ->
-  ?quota:Mtime.span ->
+  ?quota:Time.span ->
   ?kde:int option ->
   ?sampling:sampling ->
   ?stabilize:bool ->
@@ -31,11 +31,11 @@ type stats = {
   start : int;
   sampling : sampling;
   stabilize : bool;
-  quota : Mtime.span;
+  quota : Time.span;
   limit : int;
   instances : string list;
   samples : int;
-  time : Mtime.span;
+  time : Time.span;
 }
 (** Type of statistics of one benchmark. It contains which {!configuration} the
     benchmark used and:

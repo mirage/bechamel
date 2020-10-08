@@ -1,5 +1,5 @@
 opam-version: "2.0"
-name:         "bechamel"
+name:         "bechamel-js"
 maintainer:   "Romain Calascibetta <romain.calascibetta@gmail.com>"
 authors:      "Romain Calascibetta <romain.calascibetta@gmail.com>"
 homepage:     "https://github.com/dinosaure/bechamel"
@@ -7,7 +7,7 @@ bug-reports:  "https://github.com/dinosaure/bechamel/issues"
 dev-repo:     "git+https://github.com/dinosaure/bechamel.git"
 doc:          "https://dinosaure.github.io/bechamel/"
 license:      "MIT"
-synopsis:     "Yet Another Benchmark in OCaml"
+synopsis:     "HTML generator for bechamel's output"
 
 build: [
   [ "dune" "subst" ] {pinned}
@@ -18,7 +18,9 @@ build: [
 depends: [
   "ocaml"      {>= "4.08.0"}
   "dune"       {>= "2.0.0"}
+  "bechamel"   {= version}
+  "rresult"
+  "ocplib-json-typed"
+  "jsonm"
   "fmt"
-  "base-bytes"
-  "stdlib-shims"
 ]

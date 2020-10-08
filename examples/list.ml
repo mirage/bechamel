@@ -68,19 +68,21 @@ let benchmark () =
   let results = Analyze.merge ols instances results in
   (results, raw_results)
 
-let compare k0 k1 =
-  let a = ref 0 and b = ref 0 in
-  Scanf.sscanf k0 "%s %d" (fun _ a' -> a := a') ;
-  Scanf.sscanf k1 "%s %d" (fun _ b' -> b := b') ;
-  !a - !b
+let () =
+  List.iter
+    (fun v -> Bechamel_notty.Unit.add v (Measure.unit v))
+    Instance.[ minor_allocated; major_allocated; monotonic_clock ]
 
-let nothing _ = Ok ()
+let img (window, results) =
+  Bechamel_notty.Multiple.image_of_ols_results ~rect:window
+    ~predictor:Measure.run results
+
+open Notty_unix
 
 let () =
-  let results = benchmark () in
-  let results =
-    let open Bechamel_js in
-    emit ~dst:(Channel stdout) nothing ~compare ~x_label:Measure.run
-      ~y_label:(Measure.label Instance.monotonic_clock)
-      results in
-  match results with Ok () -> () | Error (`Msg err) -> invalid_arg err
+  let window =
+    match winsize Unix.stdout with
+    | Some (w, h) -> { Bechamel_notty.w; h }
+    | None -> { Bechamel_notty.w = 80; h = 1 } in
+  let results, _ = benchmark () in
+  img (window, results) |> eol |> output_image

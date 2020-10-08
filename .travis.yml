@@ -4,7 +4,11 @@ install:
 script: bash -ex .travis-opam.sh
 sudo: true
 env:
+  global:
+  - PINS="bechamel.dev:. bechamel-notty.dev:. bechamel-perf.dev:. bechamel-js.dev:. mperf.dev:."
   matrix:
-  - PACKAGE="bechamel" OCAML_VERSION=4.08 TESTS=true
-  - PACKAGE="bechamel" OCAML_VERSION=4.09 TESTS=true
-  - PACKAGE="bechamel" OCAML_VERSION=4.10 TESTS=true
+  - PACKAGE="bechamel-js" OCAML_VERSION=4.08 TESTS=true
+  - PACKAGE="bechamel-js" OCAML_VERSION=4.09 TESTS=true
+  - PACKAGE="bechamel-js" OCAML_VERSION=4.10 TESTS=true
+  - PACKAGE="bechamel-notty" OCAML_VERSION=4.10
+  - PACKAGE="bechamel-perf" OCAML_VERSION=4.10
