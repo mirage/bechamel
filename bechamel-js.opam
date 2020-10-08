@@ -8,6 +8,8 @@ dev-repo:     "git+https://github.com/dinosaure/bechamel.git"
 doc:          "https://dinosaure.github.io/bechamel/"
 license:      "MIT"
 synopsis:     "HTML generator for bechamel's output"
+description: """A simple tool to generate a standalone HTML
+page which shows results from bechamel's benchmarks."""
 
 build: [
   [ "dune" "subst" ] {pinned}

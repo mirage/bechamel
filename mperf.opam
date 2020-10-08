@@ -8,6 +8,7 @@ dev-repo:     "git://github.com/dinosaure/bechamel"
 bug-reports:  "http://github.com/dinosaure/bechamel/issues"
 license:      "GPLv2"
 synopsis:     "Bindings to Linux perf's metrics"
+description: """Simple binding to Linux perf's metrics"""
 
 build: [
   [ "dune" "subst" ] {pinned}

@@ -8,6 +8,9 @@ dev-repo:     "git+https://github.com/dinosaure/bechamel.git"
 doc:          "https://dinosaure.github.io/bechamel/"
 license:      "MIT"
 synopsis:     "Yet Another Benchmark in OCaml"
+description: """BEnchmark for a CHAMEL/camel/caml which
+is agnostic to the system. It's a micro-benchmark tool
+which lets the user to re-analyzes and prints samples."""
 
 build: [
   [ "dune" "subst" ] {pinned}

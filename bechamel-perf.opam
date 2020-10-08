@@ -8,6 +8,8 @@ dev-repo:     "git+https://github.com/dinosaure/bechamel.git"
 doc:          "https://dinosaure.github.io/bechamel/"
 license:      "MIT"
 synopsis:     "Linux perf's metrics for bechamel"
+description: """A simple layer on Linux perf's metrics for
+bechamel to record and analyze them."""
 
 build: [
   [ "dune" "subst" ] {pinned}
