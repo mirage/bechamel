@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://d3js.org/d3.v5.min.js"></script>
+  <script src="https://unpkg.com/d3-simple-slider"></script>
+  <script src="https://unpkg.com/simple-statistics@7.0.2/dist/simple-statistics.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/styles/default.min.css">
+  <link href="style.css" rel="stylesheet" type="text/css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.15.6/highlight.min.js"></script>
+  <style>
+    *{
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body{
+    width: 100%;
+    height: 100%;
+    font-family:Helvetica Neue,metric,sans-serif;
+    text-rendering: optimizeLegibility;
+}
+
+.center{
+    width: 500px;
+    margin:auto
+}
+
+text{
+    font-family: metric,sans-serif;
+}
+
+.ml {
+    text-align: left
+}
+
+svg {
+    overflow: hidden;
+    margin: auto
+}
+
+.axis line, .axis path{
+    stroke: #2E3532;
+    stroke-width:1px;
+}
+
+.axisTitle, .axis text{
+    fill: #2E3532;
+    font-size:12px;
+}
+
+.background {
+    fill: #FBFBFB;
+    stroke: #2E3532;
+}
+
+.axisTitle, .chartTitle{
+    text-anchor: middle
+}
+
+
+.ytitle {
+    text-anchor: middle;
+    transform: rotate(90deg)
+}
+
+.warningtext{
+    text-anchor: center;
+    fill: #F06449;
+}
+
+.regLine {
+    stroke: #F06449;
+    stroke-width:2px;
+    opacity:0.7
+}
+
+.circle {
+    fill: #4ECDC4;
+    stroke: #292f36;
+    stroke-width:0.3px
+}
+
+table {
+    margin:auto;
+    text-align:left;
+    border-spacing: 15px 5px;
+    border: 1px solid #2E3532
+}
+
+th {
+    text-align: center;
+    color:#F06449
+}
+
+
+tr {
+    fill: #2E3532;
+    font-size:10px
+}
+
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: auto;
+  background-color: #F06449;
+  color: #FFFFFF;
+  text-align: center;
+  border-radius: 10px;
+  padding: 0 5px 0 5px;
+  /* Position the tooltip */
+  position: absolute;
+  z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
+.bar {
+    fill: #4ECDC4;
+    stroke:#292f36;
+}
+.bar:hover {
+    fill: #F06449;
+    stroke:#292f36;
+    stroke-width:1px;
+}
+
+.radio {
+    margin: auto;
+    width : 200px;
+}
+
+.wrapper {
+    display: grid;
+    margin: 50px 50px 50px 50px;
+    gap: 10px 20px;
+    grid-auto-rows: minmax(20px, auto);
+    text-align: center;
+    place-items: center;
+}
+
+.mainTitle, .summarizeTitle {
+    height:30px;
+    width: auto;
+    border-radius: 2px;
+    padding: 0 45px 0 45px;
+    border-style: solid;
+    border-width:1px;
+    box-shadow: 2px 2px 1px rgba(0,0,0,0.1);
+    color:  #2E3532;
+    background: #FBFBFB;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.slidecontainer{
+    width: 50%;
+}
+
+  </style>
+</head>
+<body>
+
+  <script type="text/javascript">
+    // structure of JSON
+// { xLabel: string,
+//   yLabel: string,
+//   series: [ tests ] }
+//
+// tests := { name: string,
+//            description: { start : int, sampling: float, stabilize: bool,
+//                           quota: float, limit: int, instances: [string],
+//                           samples: int, time : float}
+//            dataset: [ point ],
+//            kde : [ v: float ] (optional)
+//            result: { estimate: float, r_square: float (optional) } }
+//
+// point := { x : double,
+//            y : double }
+//
+// xLabel and yLabel are the same for any tests
+window.onload = function () {
+
+const wsvg = 600;
+const hsvg = 400;
+const wslider = 200;
+const hslider = 50;
+const margin = {left:50,right:50,top:20,bottom:50};
+const dotSize = 1.5;
+const innerW = wsvg-(margin.left+margin.right);
+const innerH = hsvg-(margin.top+margin.bottom);
+
+const marginbar = {left:150,right:150,top:50,bottom:50};
+const wbar = 900;
+const innerWbar = wbar-(marginbar.left+marginbar.right);
+
+const SQRT_2PI = Math.sqrt(2 * Math.PI);
+
+// Main function : place containers and call plot functions.
+function render(inputs) {
+    inputs.series.forEach(
+	function(serie) {
+	    serie.dataset.forEach(
+		function(d) {
+		    d.x = +d.x;
+		    d.y = +d.y;
+		});}
+    );
+
+    // First step : check if there is no kde/histogram data at all in
+    // the benchmarks, in which case, we want to reduce our layout to
+    // one column.
+    let nonempty_kde = false;
+    inputs.series.forEach(function (serie) {
+	if ('kde' in serie) {
+	    nonempty_kde = nonempty_kde || true;} });
+    const nb_col = nonempty_kde ? 2 : 1;
+
+    // ************************************************ //
+    //              Layout of the page                  //
+    // ************************************************ //
+    // + a summarize bar graph on top
+    // + one section for each benchmark which includes
+    //     * 1 title
+    //     * 1 linear regression graph and its title and information table
+    //     * if kde data are available a histogram/kde graph with its control panel.
+    //
+    // If none of the benchmarks has kde data, the layout is the same
+    // but with only one column (no hist/kde graphs).
+    //
+    //
+    //              c1:        c2:
+    //
+    // r1:            *title*
+    //           ___________________
+    // r2:      |   summarize bar   |
+    //          |___________________|
+    //
+    // r3:           *title-1*
+    //
+    // r4:        *title*   *radio*
+    //           _______     _______
+    // r5:      | lr-1  |   | kde-1 |
+    //          |_______|   |_______|
+    //
+    // r6:      *infos-1*   *slider-1*
+    // ..
+    // r(4i+3):       *title-i*
+    //
+    // r(4i+4):  *title*     *radio*
+    //           _______     _______
+    // r(4i+5): | lr-i  |   | kde-i |
+    //          |_______|   |_______|
+    //
+    // r(4i+6): *infos-i*   *slider-i*
+    //
+    // etc ..
+
+      const main = d3.select("body")
+	  .append("div")
+	    .attr("class", "wrapper")
+	    .style("grid-template-columns", (nonempty_kde ? "repeat(2,"+wsvg+"px)" : "900px"))
+	    .attr("id", "main");
+
+    // ************************************************ //
+    //              Summarize bar graph                 //
+    // ************************************************ //
+
+    // Title
+    main.append("div")
+   	  .style("grid-row", "1")
+      	.style("grid-column", "1 / "+(nb_col+1))
+  	  .attr("class", "summarizeTitle")
+  	.text("Benchmarks summary");
+
+    // Bar graph
+    let bar_container = main
+	.append("div")
+   	  .style("grid-row", "2")
+      	  .style("grid-column", "1 / "+(nb_col+1))
+	  .attr("id", "bar");
+    plot_summarize_bar_graph(bar_container, inputs);
+
+
+    // ************************************************ //
+    //              Layout for lr/kde graphs            //
+    // ************************************************ //
+
+    // Benchmark titles
+    const titles = main
+	  .selectAll(".mainTitle")
+	  .data(inputs.series)
+	  .enter()
+	  .append("div")
+	    .attr("id", (data, i) => "title-"+i)
+   	    .style("grid-row", (data,i) =>""+(4*i+3))
+      	    .style("grid-column", "1 / "+(nb_col+1))
+  	    .attr("class","mainTitle")
+	  .append("text")
+  	    .attr("x", wsvg)
+  	    .attr("y", margin.top-10)
+            .text((data, i) => "#"+data.name);
+
+    // Linear regression graph titles
+    const titles_lr = main
+	  .selectAll("#title_lr")
+	  .data(inputs.series)
+	  .enter()
+	  .append("div")
+            .attr("id",  "title_lr")
+   	    .style("grid-row", (data,i) =>""+(4*i+4))
+   	    .style("grid-column", "1")
+	  .append("text")
+  	    .attr("class","chartTitle")
+  	    .text("Linear regression");
+
+    // Containers for linear regression graphs
+    const lr_graphs = main
+	  .selectAll(".lr")
+	  .data(inputs.series)
+	  .enter()
+	  .append("div")
+            .attr("class", "lr")
+	    .attr("id", (data, i) => "linearRegression-"+i)
+   	    .style("grid-row", (data,i) =>""+(4*i+5))
+   	  .style("grid-column", "1");
+
+    // Containers for linear regression info tables
+    const lr_info = main
+	  .selectAll(".lr-info")
+	  .data(inputs.series)
+	  .enter()
+	  .append("div")
+            .attr("class", "lr-info")
+	    .attr("id", (data, i) => "lr-info-"+i)
+   	    .style("grid-row", (data,i) =>""+(4*i+6))
+            .style("grid-column", "1");
+
+    let radio_div, kde_graphs, kde_controler;
+    if (nonempty_kde) {
+	// Containers for radio buttons to choose between histogram/kde plots
+	radio_div = main
+	      .selectAll(".radio_div")
+	      .data(inputs.series)
+	      .enter()
+	      .append("div")
+              .attr("class",  "radio")
+	      .attr("id", (d, i) => "radio_div"+i)
+   	      .style("grid-row", (data,i) =>""+(4*i+4))
+   	      .style("grid-column", "2");
+
+	// Containers for kde/hist graph
+	kde_graphs = main
+	      .selectAll(".kde")
+	      .data(inputs.series)
+	      .enter()
+	      .append("div")
+              .attr("class", "kde")
+	      .attr("id", (data, i) => "histKde-"+i)
+   	      .style("grid-row", (data,i) =>""+(4*i+5))
+   	      .style("grid-column", "2");
+
+	// Containers for kde/hist controlers
+	kde_controler = main
+	      .selectAll(".kde-controler")
+	      .data(inputs.series)
+	      .enter()
+	      .append("div")
+              .attr("class", "kde-controler")
+	      .attr("id", (data, i) => "kde-controler-"+i)
+   	      .style("grid-row", (data,i) =>""+(4*i+6))
+              .style("grid-column", "2");
+    }
+
+    // ************************************************ //
+    //          Linear regression graph                 //
+    // ************************************************ //
+    lr_graphs.each( function(serie, i) {
+	//Curves for each input
+	const xMin = 0;
+	const xMax = d3.max(serie.dataset, d => d.x);
+	const yMin = 0;
+	const yMax = d3.max(serie.dataset, d => d.y);
+
+	// Define x axis
+	const xScale = d3.scaleLinear()
+  	      .domain([xMin,xMax])
+  	      .range([0,innerW])
+  	      .nice();
+	const xAxis = d3.axisBottom()
+  	      .scale(xScale)
+  	      .ticks(8, "s");
+	// "s" = number format such as 1000 -> 1k
+
+	// Define y axis
+	const yScale = d3.scaleLinear()
+  	      .domain([yMin,yMax])
+  	      .range([innerH,0])
+  	      .nice();
+	const yAxis = d3.axisLeft()
+  	      .scale(yScale)
+  	      .ticks(8, "s");
+
+	// Svg
+  	const plot = d3.select(this)
+	    .append("svg")
+  	      .attr("width",wsvg)
+  	      .attr("height",hsvg);
+	// Color background
+	plot.append("rect")
+  	    .attr("x",margin.left)
+  	    .attr("y",margin.top)
+  	    .attr("width",innerW)
+  	    .attr("height",innerH)
+  	    .attr("class","background axis");
+	// Plot axis
+	plot.append("g")
+  	    .attr("transform",
+	 	  "translate("+margin.left+","
+	 	  +(hsvg-margin.bottom)+")")
+	    .attr("class", "axis")
+  	    .call(xAxis);
+	plot.append("g")
+  	    .attr("transform",
+	  	  "translate("+margin.left+","
+		  +margin.top+")")
+	    .attr("class", "axis")
+  	    .call(yAxis);
+	// Print axis titles
+	plot.append("text")
+	    .attr("class", "axisTitle")
+	    .attr("x", wsvg/2)
+	    .attr("y", hsvg-10)
+	    .text(inputs.xLabel);
+	plot.append("text")
+	    .attr("class", "axisTitle ytitle")
+	    .attr("transform-origin", 0, hsvg/2)
+	    .attr("x", 0)
+	    .attr("y", hsvg/2)
+	    .text(inputs.yLabel);
+
+	// Plot data
+	plot.append("g")
+	    .attr("transform",
+		  "translate("+margin.left+","
+		  +margin.top+")")
+  	    .selectAll("circle")
+  	    .data(serie.dataset)
+  	    .enter()
+  	    .append("circle")
+	    .attr("class", "circle")
+  	    .attr("r", dotSize)
+  	    .attr("cx", d => xScale(d.x))
+  	    .attr("cy", d => yScale(d.y));
+
+	// Plot linear regression line
+
+	const xVals = serie.dataset.map((e,j) => e.x);
+	const yVals = serie.dataset.map((e,j) => e.y);
+	const pairs = [];
+	xVals.forEach((d,i) => pairs.push([xVals[i],yVals[i]]));
+	const linReg = ss.linearRegression(pairs);
+	const linRegLine = ss.linearRegressionLine(linReg);
+	let line = plot
+	    .append("line")
+    	      .attr("transform","translate("+margin.left+","+margin.top+")")
+    	      .attr("class","regLine")
+    	      .attr("x1",xScale(xMin))
+    	      .attr("x2",xScale(xMin))
+    	      .attr("y1",yScale(linRegLine(xMin)))
+    	      .attr("y2",yScale(linRegLine(xMin)));
+	line.transition().duration(1000).delay(2000)
+    	      .attr("x2",xScale(xMax))
+    	      .attr("y2",yScale(linRegLine(xMax)));
+
+	// Add text boxes
+	//const meanX = ss.mean(xVals).toFixed(0);
+	//const meanY = ss.mean(yVals).toFixed(2);
+	//const varX = ss.sampleVariance(xVals).toFixed(0);
+	//const varY = ss.sampleVariance(yVals).toFixed(1);
+	//const corCoeff = ss.sampleCorrelation(xVals,yVals).toFixed(3);
+
+	const lr_results = [
+	    ["Linear regression line", "y = "+linReg.b.toFixed(2)+" + "+linReg.m.toFixed(3)+"x"],
+	    ["Coefficient", serie.result.estimate],
+	    ["R²", serie.result.r_square]
+	];
+
+	const sampling_to_string = sampling =>
+              (Number.isInteger(sampling) ?  "`Linear "+sampling+"" : "`Geometric "+sampling+"");
+
+	const format = v  => d3.format("s")(v);
+
+	const param_benchmarks = [
+	    ["LR sampling (sampling)", sampling_to_string(serie.description.sampling)],
+	    ["Start (start)", serie.description.start],
+	    ["Benchmark runtime (time / quota)",
+	     format(serie.description.time) + " / " + format(serie.description.quota)],
+	    ["Number of runs (samples)", serie.description.samples + " / " + serie.description.limit],
+	    ["Stabilized GC (stabilize)", serie.description.stabilize]
+	];
+
+	const table = d3.select("#lr-info-"+i)
+	      .append("table");
+
+	table.append("thead")
+	    .append("tr")
+	    .append("th")
+	    .attr("colspan", 2)
+	    .attr("scope", "col")
+	    .text("Linear regression results");
+
+	table.append("tbody")
+	    .selectAll("tr")
+	    .data(lr_results)
+	    .enter()
+	    .append("tr")
+	    .selectAll("td")
+	    .data(d => d)
+	    .enter()
+	    .append("td")
+	    .text(d=>d);
+
+	table.append("thead")
+	    .append("tr")
+	    .append("th")
+	    .attr("class", "tooltip")
+	    .attr("colspan", 2)
+	    .attr("scope", "col")
+	    .text("Benchmarks parameters")
+	    .append("span")
+	    .attr("class","tooltiptext")
+	    .text("See [Benchmarks.stats]");
+
+	table.append("tbody")
+	    .selectAll("tr")
+	    .data(param_benchmarks)
+	    .enter()
+	    .append("tr")
+	    .selectAll("td")
+	    .data(d => d)
+	    .enter()
+	    .append("td")
+	    .text(d=>d);
+
+    });
+
+    // ************************************************ //
+    //         Histogram and kde graphs                 //
+    // ************************************************ //
+    if (nonempty_kde) {
+        kde_graphs.each(function (serie, i) {
+
+	    // Svg for histogram and kde graphs
+	    let pdfgraph = d3.select(this)
+		.append("svg")
+		.attr("id", "pdfgraph")
+		.attr("width", wsvg)
+		.attr("height", hsvg)
+		.append("g")
+		.attr("transform", "translate("+margin.left+","+margin.top+")");
+
+	    // If there is no kde field in the data [serie], some note
+	    // is written in the svg window.
+	    if (!('kde' in serie)) {
+		pdfgraph.append("text")
+		    .attr("x", (margin.left+margin.right+wsvg)/2)
+		    .attr("y", (margin.top+margin.bottom+hsvg)/2)
+		    .attr("class", "warning")
+		    .text("No available data");
+	    } else if (d3.max(serie.kde) == d3.min(serie.kde)) {
+		pdfgraph.append("text")
+		    .attr("x", wsvg/2)
+		    .attr("y", hsvg/2)
+		    .attr("class", "warningtext")
+		    .text("All data have same value.");
+	    } else {
+		const data = serie.kde;
+		//Some default values
+		const min_slider = (d3.max(data)-d3.min(data))/data.length;
+		const max_slider = (d3.max(data)-d3.min(data))/30;
+		let vslider = min_slider;
+
+		//Radio buttons
+		const form = d3.select("#radio_div"+i)
+		      .append("form");
+
+		form.append("input")
+		    .attr("type", "radio")
+		    .attr("name", "graph")
+		    .attr("value", "hist"+i)
+		    .attr("name", "graph")
+		    .attr("checked", "checked")
+		    .on("change", () => plot_chosen_graph(d3.select(this), "hist"));
+		form.append("label")
+		    .attr("for", "hist"+i)
+		    .text("Histogram");
+		form.append("input")
+		    .attr("type", "radio")
+		    .attr("value", "kde"+i)
+		    .attr("name", "graph")
+		    .on("change", () => plot_chosen_graph(d3.select(this), "kde"));
+		form.append("label")
+		    .attr("for", "kde"+i)
+		    .text("KDE");
+
+		//axis
+		const min = d3.min(data),
+		      max = d3.max(data);
+		const minX = d3.max([0, min-max_slider]),
+		      maxX = max+max_slider;
+
+		//X axis is the same for both graphs (histogram and kde)
+		const xscale = d3.scaleLinear()
+		      .range([0, innerW])
+		      .domain([minX, maxX])
+		      .nice();
+		const xAxis = d3.axisBottom()
+		      .scale(xscale)
+		      .ticks(8, "s");
+
+		//Y axis has a different domain value between both graphs.
+		//So yscale.domain() is defined individually for each plot.
+		const yscale = d3.scaleLinear()
+		      .range([0, innerH])
+		      .nice();
+		const yAxis = d3.axisLeft()
+		      .scale(yscale)
+		      .ticks(8, "s");
+
+		//x value for kde graph
+		const n = 1000;
+		const x = Array(n);
+		const xmin = d3.min(xscale.domain()),
+		      xmax = d3.max(xscale.domain());
+		for (let i=0; i<n; i++) { x[i] = xmin + i*(xmax-xmin)/n; }
+
+		//Compute kde function for min bandwidth value to determine to determine
+		//the max value of Y axis. Only happens one time when loading the webpage.
+		const kde = kernelDensityEstimation(data, min_slider);
+		const v = new Array(n);
+		for (let i=0; i<n;i++){ v[i] = kde(x[i]);}
+		const maxYkde = d3.max(v),
+		      maxYhist = d3.max(histogram(data, max_slider, min, max));
+
+		//background
+		pdfgraph
+		    .append("rect")
+  		    .attr("x", 0)
+  		    .attr("y", 0)
+  		    .attr("width", innerW)
+  		    .attr("height", innerH)
+  		    .attr("class","background axis");
+
+		// x Axis
+		const gxAxis = pdfgraph
+	              .append("g")
+	              .attr("transform","translate(0"+","+innerH+")")
+	              .attr("class", "axis")
+	              .call(xAxis);
+
+		// y Axis
+		const gyAxis = pdfgraph
+	              .append("g")
+	              .attr("class", "axis")
+	              .call(yAxis);
+
+		// X Axis title
+		pdfgraph.append("text")
+		    .attr("class", "axisTitle")
+		    .attr("x", innerW/2)
+		    .attr("y", innerH+40)
+		    .text("Estimated "+inputs.yLabel);
+
+		plot_chosen_graph(d3.select(this), "hist");
+
+		function plot_chosen_graph(container, choice) {
+
+
+		    container.selectAll(".bar").remove();
+		    container.select(".mypath").remove();
+		    container.select(".ytitle").remove();
+
+		    // Erasing control panels if it exists and initializing it
+		    const control_container = d3.select("#kde-controler-"+i);
+		    const slider = control_container.select("#slider-"+i);
+		    const slidertitle = control_container.select("#slidertitle-"+i);
+		    if (!slider.empty())  {
+			slider.remove();
+		    }
+		    if (!slidertitle.empty())  {
+			slidertitle.remove();
+		    }
+
+		    //Hist part
+		    if (choice=="hist") {
+			// Defined yAxis
+			yscale.domain([maxYhist, 0]).nice();
+			yAxis.scale(yscale);
+			gyAxis.call(yAxis);
+
+			// y Axis title
+			pdfgraph.append("text")
+			    .attr("transform-origin", "10 "+(innerH/2))
+			    .attr("class", "axisTitle ytitle")
+			    .attr("x", 10)
+			    .attr("y", innerH/2)
+			    .text("Count");
+
+			const barwidth = vslider;
+
+			const update_hist =
+			      plot_histogram(pdfgraph, data, barwidth, xscale, yscale);
+
+			//slider
+			control_container
+			    .insert("p")
+			    .attr("align", "center")
+			    .attr("id", "slidertitle-"+i)
+			    .text("Barwidth");
+
+			control_container
+			    .insert("svg")
+			    .attr("width", wsvg)
+			    .attr("height", hslider)
+			    .attr("id", "slider-"+i)
+			    .append("g")
+			    .attr("transform", "translate("+(wsvg-wslider)/2+",10)")
+			    .call(d3
+				  .sliderBottom()
+				  .min(min_slider)
+				  .max(max_slider)
+				  .width(wslider)
+				  .ticks(5, "s")
+				  .default(vslider)
+				  .fill("red")
+				  .on("onchange", (value) => {
+				      if (value > 0) {
+					  vslider=value;
+					  update_hist(vslider);}}));
+		    } else {
+			//Defined yAxis
+			yscale.domain([maxYkde, 0]).nice();
+			yAxis.scale(yscale);
+			gyAxis.call(yAxis);
+
+			// y Axis title
+			pdfgraph.append("text")
+			    .attr("transform-origin", "10 "+(innerH/2))
+			    .attr("class", "axisTitle ytitle")
+			    .attr("x", +10)
+			    .attr("y", innerH/2)
+			    .text("Density");
+
+			const bandwidth = vslider;
+			const update_kde = plot_kde(pdfgraph, data, bandwidth, xscale, yscale, x);
+
+			//slider
+			control_container.insert("p")
+			    .attr("align", "center")
+			    .attr("id", "slidertitle-"+i)
+			    .text("Bandwidth");
+
+			control_container.insert("svg")
+			    .attr("width", wsvg)
+			    .attr("height", hslider)
+			    .attr("id", "slider-"+i)
+			    .append("g")
+			    .attr("transform", "translate("+(wsvg-wslider)/2+",10)")
+			    .call(d3
+				  .sliderBottom()
+				  .min(min_slider)
+				  .max(max_slider)
+				  .width(wslider)
+				  .ticks(5, "s")
+				  .default(vslider)
+				  .fill("red")
+				  .on("onchange", (value) =>
+				      {if (value > 0) { vslider=value; update_kde(vslider);}}));
+		    }; // end else
+		}; // end function
+	    }; //end else (available kde data)
+	}); //end function // end each
+    }; //end if
+
+
+
+function plot_summarize_bar_graph(container, inputs) {
+
+    const hbar = d3.min([60*inputs.series.length, hsvg]);
+    const innerHbar = hbar - marginbar.top - marginbar.bottom;
+
+    const xb = d3.scaleLinear()
+	  .range([0, innerWbar])
+	  .domain([0, d3.max(inputs.series, serie => serie.result.estimate)])
+	  .nice();
+    const yb = d3.scaleBand()
+	  .range([0, innerHbar])
+	  .padding(0.2)
+	  .domain(inputs.series.map(serie => serie.name));
+    const xbAxis = d3.axisBottom()
+	  .scale(xb)
+	  .ticks(8, "s");
+    const ybAxis = d3.axisLeft()
+	  .scale(yb);
+
+    const bargraph =
+	container.append("svg")
+	.attr("width", wbar)
+	.attr("height", hbar);
+
+    // background
+    bargraph.append("rect")
+  	.attr("x", marginbar.left)
+  	.attr("y", marginbar.top)
+  	.attr("width", innerWbar)
+  	.attr("height", innerHbar)
+  	.attr("class", "background axis");
+    // x Axis
+    bargraph.append("g")
+	.attr("transform","translate("+marginbar.left+","+(hbar-marginbar.bottom)+")")
+	.attr("class", "axis")
+	.call(xbAxis);
+    // x axis title
+    bargraph.append("text")
+	.attr("class", "axisTitle")
+	.attr("x", wbar/2)
+	.attr("y", hbar-10)
+	.text("Estimated "+inputs.yLabel);
+    // y Axis
+    bargraph.append("g")
+	.attr("transform","translate("+marginbar.left+","+marginbar.bottom+")")
+	.attr("class", "axis")
+	.call(ybAxis);
+
+    // Bargraph
+    bargraph.append("g")
+	.attr("transform","translate("+marginbar.left+","+marginbar.top+")")
+	.selectAll(".bar")
+   	.data(inputs.series)
+	.enter()
+	.append("rect")
+	.attr("class", "bar")
+	.attr("y", serie => yb(serie.name))
+	.attr("height", yb.bandwidth)
+	.attr("x", serie => 0)
+	.attr("width", serie => xb(serie.result.estimate))
+	.attr("fill", "#4ECDC4")
+	.on("mouseover", function (serie) {
+	    // Specify where to put label of text
+	    bargraph.append("text")
+		.attr("class", "axisTitle")
+		.attr("id", "tt")
+		.attr("x", wbar-200)
+		.attr("y", marginbar.top-10)
+		.text("Value: "+d3.format(".4s")(serie.result.estimate));
+	})
+        .on("mouseout", function (serie) {
+	    // Select text by id and then remove
+	    d3.selectAll("#tt").transition().duration("50").remove();
+	});
+
+};
+
+// [histrogram (data, barwidth, min, max)] computes histogram
+// values as follows:
+// - a value [v] of [data] contributes to the bar between [u] and
+// [u+barwidth] if u <= v < u+barwidth
+// - the [i]th bar is between [min+i*barwidth] and [min+(i+1)*barwidth]
+// - [max] is used only to determine the number of bars. It MUST be greater
+// than [d3.max(data)]
+function histogram(data, barwidth, min, max) {
+    const nbar = Math.floor((max-min)/barwidth)+1;
+    let hist = new Array(nbar);
+    for (let i=0; i<nbar; i++) {
+	hist[i]=0;
+    }
+
+    data.forEach(function(v) {
+	const ind = Math.floor((v-min)/barwidth);
+	hist[ind] ++;
+    });
+
+    let n = data.length;
+    for (let i=0; i<nbar; i++) {
+	hist[i] = hist[i];
+    }
+
+    return hist;
+}
+
+// [plot_histogram(container, data, bandwidth, xscale, yscale)]
+// draws the histogram computes with
+// [histogram(data, barwidth, d3.min(data), d3.max(data)]
+// in the html element [container].
+//
+// Axis are already defined on [container], using [xscale] and [yscale].
+//
+// In addition, this function returns the update function
+// that redraw the bar if called with a new barwidth.
+function plot_histogram(container, data, barwidth, xscale, yscale) {
+    const min = d3.min(data),
+	  max = d3.max(data);
+    const hist = histogram(data, barwidth, min, max);
+    const sample_nb = data.length;
+
+    const print_value = function (v) {
+	container.append("text")
+	    .attr("class", "axisTitle")
+	    .attr("id", "tt2")
+	    .attr("x", wsvg-170)
+	    .attr("y", 20)
+	    .text("Value: "+d3.format("d")(v)+" / "+d3.format("d")(sample_nb));};
+
+    const rects = container
+	  .selectAll(".bar")
+   	  .data(hist)
+	  .enter();
+
+    rects.append("rect")
+	.attr("class", "bar")
+	.attr("x", (v, i) => xscale(i*barwidth+min))
+	.attr("width", (v, i) => xscale(barwidth)-xscale(0))
+	.attr("y", (v, i) => yscale(v))
+	.attr("height", (v, i) => innerH-yscale(v))
+	.on("mouseover", print_value)
+        .on("mouseout", () => d3.selectAll("#tt2").transition().duration("50").remove());
+
+    function update_hist(nbarwidth) {
+	//compute new histograph values
+	const nhist = histogram(data, nbarwidth, min, max);
+
+	const rects = container
+	      .selectAll(".bar")
+   	      .data(nhist);
+
+	rects.exit().remove();
+
+	rects.enter().append("rect").attr("class", "bar")
+	    .merge(rects)
+	    .attr("x", (v, i) => xscale(i*nbarwidth+min))
+	    .attr("width", (v, i) => xscale(nbarwidth)-xscale(0))
+	    .attr("y", (v, i) => yscale(v))
+	    .attr("height", (v, i) => innerH-yscale(v))
+	    .on("mouseover", print_value)
+            .on("mouseout", () => d3.selectAll("#tt2").transition().duration("50").remove());
+    }
+    return update_hist;
+};
+
+// [kernelDensityEstimation(data, bandwith] returns the function x -> kde(x)
+//    for [data]. The kernel function used is a gaussian.
+function kernelDensityEstimation(X, bandwidth) {
+    //gaussian constante
+    const a = 1/(2*bandwidth*bandwidth);
+    const b = bandwidth * SQRT_2PI;
+    const gaussianKernel =
+	  function (x) {
+	      return Math.exp(-a * x * x) / b;
+	  };
+
+    return function (x) {
+        let i = 0;
+        let sum = 0;
+        for (i = 0; i < X.length; i++) {
+	    sum += gaussianKernel(x - X[i])/X.length;
+        }
+	return sum ;
+    };
+}
+
+// [plot_kde(container, data, bandwidth, xscale, yscale, x)] draws
+// the kde function computes with [kde(data, bandwidth)]
+// for the abscisse values defined by [x], in the html element
+// [container].
+//
+// Axis are already defined on [container], using [xscale] and
+// [yscale].
+//
+// In addition, this function returns the update function that
+// redraw the curve if called with a new bandwidth.
+function plot_kde(container, data, bandwidth, xscale, yscale, x) {
+    const n = x.length;
+    const kde = kernelDensityEstimation(data, bandwidth);
+    const density = new Array(n);
+
+    for (let i=0; i<n;i++){
+	let tmp = x[i] ;
+	density[i] = [tmp, kde(tmp)];
+    }
+
+    const graph = container
+	  .append('g')
+	  .append("path")
+	  .attr("class", "mypath")
+	  .datum(density)
+	  .attr("fill", "#4ECDC4")
+	  .attr("opacity", ".8")
+	  .attr("stroke", "#292F36")
+	  .attr("stroke-width", 1)
+	  .attr("stroke-linejoin", "round")
+	  .attr("d",
+		d3.line()
+		.curve(d3.curveBasis)
+		.x(d => xscale(d[0]))
+		.y(d => yscale(d[1])));
+
+    function update_kde(nbandwidth) {
+	let kde = kernelDensityEstimation(data, nbandwidth);
+
+	for (let i=0; i<n;i++){
+	    density[i][1] = kde(density[i][0]);
+	}
+
+	graph.datum(density)
+	    .transition()
+	    .duration(50)
+	    .attr("d",
+		  d3.line()
+		  .curve(d3.curveBasis)
+		  .x(d => xscale(d[0]))
+		  .y(d => yscale(d[1])));
+    };
+
+    return update_kde;
+};
+
+};
+
+
+var contents = null;
+contents = {"xLabel":"run","yLabel":"monotonic-clock","series":[{"name":"factorial imperative 10","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":39,"time":1024524791},"dataset":[{"x":1,"y":654376},{"x":2,"y":1307824},{"x":3,"y":2008472},{"x":4,"y":2642836},{"x":5,"y":3333724},{"x":6,"y":4015856},{"x":7,"y":4651128},{"x":8,"y":5346096},{"x":9,"y":5950168},{"x":10,"y":6654556},{"x":11,"y":7352720},{"x":12,"y":8035956},{"x":13,"y":8652080},{"x":14,"y":9306888},{"x":15,"y":10078348},{"x":16,"y":10788700},{"x":17,"y":11320992},{"x":18,"y":11980160},{"x":19,"y":12651872},{"x":20,"y":13315272},{"x":21,"y":14048076},{"x":22,"y":14665864},{"x":23,"y":15494232},{"x":24,"y":16086700},{"x":25,"y":16796320},{"x":26,"y":17352012},{"x":27,"y":17980524},{"x":28,"y":18787240},{"x":29,"y":19524236},{"x":30,"y":20477744},{"x":31,"y":20717764},{"x":32,"y":21456516},{"x":33,"y":22322008},{"x":34,"y":23164896},{"x":35,"y":23612344},{"x":36,"y":24206184},{"x":37,"y":24988892},{"x":38,"y":25948784},{"x":39,"y":26523756}],"kde":[655808,657952,658872,708760,656108,655104,656160,655668,655204,704812,655432,655636,655104,656304,656108,705544,706480,673000,656924,658304,702040,705832,655988,655812,656140,656172,703888,752972,655504,656244,701024,678464,725272,709592,687728,785004,671492,698336,732800,672828,656056,657728,657308,655884,751664,656732,681388,679476,655796,655632,749928,656180,656456,656024,656364,657428,771648,685872,656360,657072,656232,680096,744948,700208,707640,726032,699724,726976,693476,702276,655724,655984,656552,746076,672388,700400,656172,656428,657380,707544,655904,720788,683552,656508,654096,752540,653952,653964,653940,653936,653972,746144,653952,705296,705656,653944,653964,700392,653960,653948,653968,753724,720784,722172,653976,653952,683024,728168,689828,674312,653944,653948,653940,653968,721736,702796,722104,675012,653952,680004,726700,654012,653952,653956,653944,653948,686812,674012,654064,653976,653960,653956,713032,653948,653976,653936,653944,653952,683368,672200,653968,653944,700344,689056,722240,674084,677816,674748,679256,653948,719660,685736,653952,698364,678264,673776,735156,670580,653944,653940,653952,653964,700320,653976,653976,653948,653940,680936,717332,700088,719956,697240,690388,675880,678628,675632,679100,680592,695024,700256,674656,653968,683108,726704,656156,687696,674856,658028,682192,684680,729664,712280,675456,656664,655884,705264,655512,733624,705596,724020,687932,656676,658308,767556,682288,676848,654860,655824,681716,682492,655688,655960,656756,656336,680744,681976,676404,684088,656252,657120,730004,694732,655000,675108,731280,657920,687448,704224,782604,680696,656340,657400,707896,655840,656924,701008,657420,656440,706080,655804,656424,656756,656940,682832,725428,701352,655204,656088,657464,659044,759436,700284,683164,705404,726556,705740,679820,657876,703984,656680,657320,684740,724108,657180,656688,656824,657288,687124,675840,654792,702608,656004,656944,713356,692624,656192,655668,655860,657644,689104,674176,656568,656572,679096,725324,724256,702432,655136,681100,674176,682512,726516,753348,656596,676104,684448,674864,774272,674528,656120,656288,657312,682844,682180,657624,657044,683296,679552,711136,702680,679276,680104,709308,708192,758680,656404,656676,701320,657656,657692,763364,655668,656804,656400,747988,744212,707728,743468,657600,654060,654252,676640,682964,701928,654004,653964,653936,703860,711248,653968,653940,653944,653940,676932,704212,701288,675936,705648,654332,694252,680964,653940,681040,670896,725396,700648,653972,653944,700524,653952,654820,749876,653968,674764,677240,653976,680044,708652,679708,653972,653944,653944,653948,700020,653948,698008,653960,653996,653960,718740,679468,653948,677764,691872,698032,699904,653968,653940,653940,653944,699592,699992,653956,653940,653968,653964,653964,700028,698904,653952,653936,653960,653940,727972,695716,681192,688132,689008,727348,720280,653964,672328,687388,653948,656120,653952,653956,653940,653944,653940,656020,653952,653940,653944,698484,653972,675668,677768,653956,653952,653940,653944,656036,653968,654776,740008,722020,686228,710264,673160,653952,654052,653936,653952,679580,719788,653992,653952,653952,653948,680108,673948,653956,653952,653972,653960,678808,701048,698652,696856,693124,705388,699964,700088,653948,653956,653944,653964,700084,653948,681720,698280,695032,676564,700112,717416,653956,653948,653944,653936,656648,653940,682764,681228,653972,653948,756032,671868,683436,703224,653948,653944,705076,707704,698132,682024,674984,675788,722552,703092,653956,698728,653956,679904,674256,653992,653948,653948,654860,685960,674936,653948,697856,653940,653976,679892,674784,653952,653964,653960,673280,706104,717660,653948,653956,653952,653940,680852,699144,677104,653952,653968,653952,690096,703148,653964,653940,653944,653944,725568,686968,653952,653940,653944,653940,694184,688040,734428,676144,704668,653976,727504,653984,653944,653944,653932,653944,748856,653952,653952,653940,681944,671636,700440,653952,653964,653936,653944,653948,700264,653948,653956,653940,653940,653968,700172,653956,653944,653976,653944,653940,700208,653976,654796,653952,653952,653952,749328,653956,653944,653944,653964,653940,699856,653960,653964,653936,699276,653944,699948,677128,679112,671588,653968,653944,700056,653952,653940,653964,653952,653968,702912,672296,684676,653952,653948,653960,719760,673940,700504,675392,672460,679772,656120,653948,653968,683196,670760,684224,672404,673452,678524,653952,653996,653956,699996,653952,660000,741320,711888,656000,672944,679024,697916,653944,653948,655944,758508,726612,678380,655520,653936,724568,672600,653952,653936,653932,654876,699440,696980,653952,679976,671776,765628,723296,697864,653956,655432,653948,697936,699756,697656,653956,653948,677104,674784,704776,653960,653960,653948,655364,680196,676308,653948,655432,653944,653944,653940,679112,677316,653948,653936,653940,653928,699548,653956,698124,656792,653948,653944,659772,656668,653952,653940,653944,653944,700136,653944,653944,653972,683948,673576,656176,688944,674356,674008,685256,653944,656008,653948,653952,653952,653940,705036,732648,705028,711480,676040,653952,705068,655920,655344,698596,653964,653944,676004,709124,685276,653952],"result":{"estimate":673513.1092502436,"r_square":0.9997156388094341}},{"name":"factorial functional 10","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":36,"time":1006913553},"dataset":[{"x":1,"y":1141700},{"x":2,"y":1529788},{"x":3,"y":2219356},{"x":4,"y":3219452},{"x":5,"y":3887312},{"x":6,"y":4493388},{"x":7,"y":5246424},{"x":8,"y":6040748},{"x":9,"y":6806656},{"x":10,"y":7529688},{"x":11,"y":8193716},{"x":12,"y":8905476},{"x":13,"y":9680560},{"x":14,"y":10540432},{"x":15,"y":11289780},{"x":16,"y":11944788},{"x":17,"y":12659952},{"x":18,"y":13348816},{"x":19,"y":14524760},{"x":20,"y":14815588},{"x":21,"y":15706448},{"x":22,"y":16415728},{"x":23,"y":17042096},{"x":24,"y":18357916},{"x":25,"y":18860364},{"x":26,"y":20218868},{"x":27,"y":21200480},{"x":28,"y":21818212},{"x":29,"y":22502936},{"x":30,"y":23484992},{"x":31,"y":23579728},{"x":32,"y":23917268},{"x":33,"y":25225880},{"x":34,"y":25657320},{"x":35,"y":26626768},{"x":36,"y":28081856}],"kde":[750836,750796,754024,815976,751708,751828,783484,774024,986124,794896,753752,754400,755604,1106572,752324,752180,756988,757168,865988,750864,752568,752032,754780,1125612,751628,903804,750572,779236,776996,752868,797768,755616,755360,839004,751396,752208,754548,762620,805976,751328,751780,754396,1080956,861184,750772,991500,1159340,918724,750516,752888,777584,785968,933816,789844,757748,754060,1085488,797576,750960,752588,754664,756100,804484,764184,752980,756304,758428,900224,751932,751612,754132,754228,953460,751580,753568,754032,754048,885924,752784,754176,758432,753924,940964,752680,764164,752760,754552,817440,753356,751460,753336,755484,851324,776616,798676,722328,722924,742144,802076,722396,722460,769636,722592,769424,722492,722408,722512,722368,790044,746352,722488,722444,722548,722376,1072628,742044,742056,748068,724460,1036568,740428,749864,722484,722452,976900,722472,722524,725716,722448,913544,722552,724812,767012,766380,753244,739544,756448,782992,722556,722428,769312,722384,722536,768656,744052,1032812,722408,722416,725420,722420,771408,722416,722484,722480,722572,803088,745380,722420,722496,722364,722600,1023876,722504,722372,722464,751644,1007648,722352,722496,722388,722572,897328,740200,756220,746032,742988,1306492,722440,725348,722484,722568,866160,769216,772428,722500,722476,753180,784160,722464,722440,722476,743216,749848,722448,722488,724512,722576,769228,766528,766392,766412,722428,907584,722476,722572,722440,722552,722440,896472,722396,722512,722412,724856,1072440,722460,722428,722456,722492,935208,747576,741160,722464,722480,868588,722472,724540,722600,722452,757640,837168,722480,739816,794500,722412,857528,722368,722496,784160,793752,771720,722524,722428,819532,722484,842404,722440,725060,722392,722448,754076,771228,743976,722552,745088,749232,771892,722480,722400,722492,726928,833560,738600,722584,722404,722604,722368,839580,722404,744424,749836,722512,943984,726504,722416,722496,741856,920684,741764,748388,722396,722492,750728,743592,722412,749072,740056,766160,780752,722516,724680,722576,722448,876452,724648,722540,722424,764720,804424,786292,722444,722496,767456,722464,826316,722444,722468,756156,740908,909716,722384,724812,767264,722440,784864,722472,722448,722536,793864,930124,775528,786888,750260,795132,895736,800784,794452,750268,750220,879488,770068,750284,750128,750296,777920,813784,836904,724632,776156,766448,919732,833292,766344,766696,744904,829224,782824,722536,766528,766644,816252,790516,806124,755220,752660,823284,766456,746564,744500,722892,887580,746100,742352,743736,776476,972676,722428,776160,722344,722484,771252,767584,722444,722516,722440,724400,770356,722456,722408,722444,722432,970648,770528,741292,724592,765940,860892,724020,724812,766600,774148,907400,741628,746616,742424,722568,722432,802448,722392,766064,765848,768764,1008424,722328,722352,748036,742776,884984,740956,747436,722400,766048,947876,722536,722448,722464,766164,763428,744292,722524,722376,722388,725520,769688,722380,722488,739952,748280,785620,766552,766408,722544,722332,744700,772808,789180,722408,722564,722404,771912,722412,722496,722444,722460,809040,740304,722360,722540,724600,722496,769816,722488,724440,722620,722348,810492,775544,762860,745256,722540,747376,791652,722348,722472,766288,724456,820572,722532,722372,770456,773540,847792,722380,722500,756200,739756,853520,722496,722496,773592,722360,727112,768548,745064,770208,747136,749980,760964,766428,722432,773496,722536,830828,752276,743976,722544,766360,809592,749444,724712,722380,722432,722448,773244,744700,741004,755084,722404,775916,722820,768988,750776,747396,744800,759280,722480,726044,773756,722384,1059292,722324,722600,722444,722488,1051176,722528,722396,773460,722352,946756,743068,722516,765976,724648,769720,766032,722428,722548,768468,746964,761664,722436,751528,778712,742868,815656,724712,773600,722476,792760,991900,773556,722400,722516,722368,780828,745224,774384,749828,773512,871468,746912,741876,724736,750396,824820,775600,744712,722404,722484,722356,776204,722328,750304,745768,742096,915464,773832,750096,750308,752548,786996,738888,722492,773380,722576,722372,814236,722416,722572,773512,722412,1086788,725180,765924,766308,722400,800812,777504,743128,743664,751828,769388,722472,753408,742632,751592,785708,743160,722512,724560,722620,722436,797572,749972,741768,746772,741728,912000,722520,773472,722460,765976,901336,722384,772196,768132,768392,769808,769960,722472,724664,766016,722432,769376,754244,741592,744976,743656,802780,724440,722428,753920,785768,910312,722520,722420,750224,763880,861892,770308,722496],"result":{"estimate":762409.1642601507,"r_square":0.9985183929918058}},{"name":"factorial imperative 50","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":21,"time":1043284106},"dataset":[{"x":1,"y":2387864},{"x":2,"y":4883344},{"x":3,"y":7231848},{"x":4,"y":9505572},{"x":5,"y":11824944},{"x":6,"y":14281808},{"x":7,"y":16687552},{"x":8,"y":19063064},{"x":9,"y":21465224},{"x":10,"y":23490080},{"x":11,"y":25896484},{"x":12,"y":27835648},{"x":13,"y":30136248},{"x":14,"y":32879060},{"x":15,"y":35465084},{"x":16,"y":37186140},{"x":17,"y":39330796},{"x":18,"y":42194556},{"x":19,"y":44750328},{"x":20,"y":47094096},{"x":21,"y":48981096}],"kde":[2297512,2347896,2436716,2321912,2448764,2328068,2374936,2471256,2282640,2392304,2413376,2461312,2372652,2371020,2373232,2415764,2418996,2373724,2455820,2374628,2368852,2376136,2421120,2368776,2372624,2370556,2418552,2373012,2369188,2426044,2434596,2443180,2425932,2370840,2419976,2371424,2390320,2420344,2403928,2443436,2442704,2515208,2445556,2373136,2490944,2443340,2395028,2423668,2373092,2400744,2440860,2451768,2376104,2468556,2348596,2363140,2313772,2396884,2298432,2392316,2321552,2368424,2323468,2378644,2392812,2467160,2439852,2428224,2453204,2427344,2396556,2399052,2380756,2437348,2478800,2375504,2369096,2422272,2411352,2376388,2381136,2369532,2455028,2372480,2426904,2403872,2395916,2428192,2373872,2420400,2441184,2392612,2490332,2395848,2423772,2410156,2469916,2427288,2380244,2467596,2470096,2372756,2454620,2423388,2419352,2423292,2358216,2352500,2341244,2476652,2333652,2351224,2390748,2338188,2390104,2484596,2321860,2326428,2320736,2278556,2297952,2315976,2408304,2398180,2409412,2321848,2436308,2395232,2394604,2370136,2322756,2367580,2372456,2439692,2431396,2448320,2371164,2370752,2417152,2372072,2276588,2329108,2350168,2293728,2310656,2389584,2375172,2404948,2345612,2375036,2435200,2322700,2325116,2364996,2386796,2351688,2398500,2310972,2373952,2377820,2362204,2471760,2320168,2321440,2399764,2362484,2411868,2322340,2430232,2359600,2419540,2397792,2345044,2340184,2366364,2349380,2323264,2366556,2374336,2364212,2373656,2323240,2323044,2415416,2324796,2414988,2379764,2321148,2392500,2333520,2373348,2351748,2327928,2367348,2327556,2323424,2320836,2443600,2413944,2322908,2347720,2302964,2375496,2346104,2370232,2351648,2276616,2345728,2369248,2300328],"result":{"estimate":2343969.047417698,"r_square":0.9996894754834165}},{"name":"factorial functional 50","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":15,"time":1011701257},"dataset":[{"x":1,"y":4364376},{"x":2,"y":8375176},{"x":3,"y":12870756},{"x":4,"y":17005476},{"x":5,"y":21149028},{"x":6,"y":25530556},{"x":7,"y":29634796},{"x":8,"y":34380524},{"x":9,"y":37805852},{"x":10,"y":41586052},{"x":11,"y":46226860},{"x":12,"y":49734116},{"x":13,"y":55955152},{"x":14,"y":61475800},{"x":15,"y":65534352}],"kde":[4175832,4240152,4261876,4359584,4353072,4225788,4208888,4452824,4234344,4430104,4342236,4296468,4283856,4527264,4307724,4303616,4473388,4306816,4635716,4354780,4413948,4372460,4611980,4450412,4459836,4283712,4373752,4528488,4320200,4689164,4307348,4310916,4273320,4455616,4382888,4295416,4283392,4379480,4421860,4327864,4223000,4077976,4237580,4169788,4129912,4432144,4078040,4354812,4209824,4172288,4300636,4077452,4169828,4222884,4172952,4242320,4487780,4247348,4137704,4277388,4169324,4118116,4206648,4124948,4167004,4353268,4280756,4199784,4314304,4122600,4174624,4164580,4174936,4168388,4379284,4231952,4336468,4122272,4131604,4357600,4275568,4165604,4263048,4347276,4172928,4426444,4263460,4211140,4215272,4464480,4278372,4252084,4174036,4180592,4203272,4209632,4246416,4123348,4213932,4178164,4277576,4145820,4166192,4228608,4260724,4193448,4193504,4388348,4214728,4121304,4473876,4121612,4135300,4169664,4128392,4224608,4241792],"result":{"estimate":4275545.674193549,"r_square":0.9981064031921666}},{"name":"factorial imperative 100","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":15,"time":1046110222},"dataset":[{"x":1,"y":4665828},{"x":2,"y":8993700},{"x":3,"y":13543944},{"x":4,"y":18009896},{"x":5,"y":22524948},{"x":6,"y":27158732},{"x":7,"y":31449760},{"x":8,"y":36422640},{"x":9,"y":40454448},{"x":10,"y":44952160},{"x":11,"y":49471436},{"x":12,"y":54131060},{"x":13,"y":59178128},{"x":14,"y":64141236},{"x":15,"y":68184552}],"kde":[4429628,4476420,4555124,4534828,4436344,4523320,4528176,4575328,4519620,4479304,4478240,4478904,4472852,4517992,4441416,4474416,4701232,4641356,4595736,4567680,4570164,4623092,4575860,4567776,4651604,4568072,4623968,4697096,4669132,4621224,4642440,4642336,4620456,4613680,4610576,4612552,4568364,4576056,4638152,4595620,4616616,4568952,4596776,4610628,4704264,4660264,4619280,4667476,4621516,4628320,4675052,4661420,4620152,4660040,4619944,4619916,4667828,4569692,4670168,4626008,4656184,4629628,4699012,4678132,4474860,4494864,4485784,4474032,4550596,4498064,4476356,4582056,4505160,4524804,4429116,4532204,4598940,4639728,4450796,4500896,4571908,4473248,4475760,4568852,4624200,4466280,4494304,4523244,4491428,4434428,4473512,4530256,4480892,4612500,4599556,4521988,4518808,4611156,4653360,4463396,4630844,4614500,4530340,4502300,4567124,4569244,4568504,4518912,4719712,4662776],"result":{"estimate":4532147.267741935,"r_square":0.9997914628571036}},{"name":"factorial functional 100","description":{"start":1,"sampling":1.01,"stabilize":true,"quota":500000000,"limit":2000,"instances":["minor-allocated","major-allocated","monotonic-clock"],"samples":11,"time":1077841105},"dataset":[{"x":1,"y":8613960},{"x":2,"y":16962756},{"x":3,"y":26233544},{"x":4,"y":33919312},{"x":5,"y":42584304},{"x":6,"y":51431168},{"x":7,"y":61453228},{"x":8,"y":69256696},{"x":9,"y":77514260},{"x":10,"y":85699680},{"x":11,"y":95835700}],"kde":[8491944,8680252,8619764,8561636,8523760,8486884,8494132,8540300,8594492,8907472,8702896,9118056,8722820,8768060,9076888,8772680,8686872,8689724,8861116,8989980,8831048,8772800,8890728,8596516,8702640,8229508,8440680,8561436,8652024,8564668,8505500,8467560,8587720,8365680,8499304,8462048,8626292,8444976,8646828,8867960,8685156,8482448,8740504,8411140,8781908,8320680,8531552,8460416,8387960,8332080,8689232,8470764,8799636,8473224,8517972,8612728,8502640,8532368,8551644],"result":{"estimate":8639268.545454545,"r_square":0.9996009565532838}}]}
+
+
+if (contents == null)
+    d3.json("outputs.json", render);
+else
+    render(contents);
+}
+
+  </script>
+
+</body>
+</html>
