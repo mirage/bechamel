@@ -28,5 +28,6 @@
 
 (rule
  (targets fact.html)
+ (mode promote)
  (action
   (system "%{bin:bechamel-html} < %{dep:fact.json} > %{targets}")))
