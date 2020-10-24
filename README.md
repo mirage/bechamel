@@ -12,7 +12,7 @@ Some examples of `bechamel` are available in the `examples` directory. They want
 to show:
 
 - the standalone HTML output (available
-  [here](https://dinosaure.github.io/fact.html) this output is buildable with
+  [here](https://dinosaure.github.io/bechamel/fact.html) this output is buildable with
   `dune build examples/fact.html`
 - the CLI output (with `notty`)
 - a benchmark with system specifics metrics (such as `perf`)
