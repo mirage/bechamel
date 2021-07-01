@@ -12,12 +12,12 @@ Some examples of `bechamel` are available in the `examples` directory. They want
 to show:
 
 - the standalone HTML output (available
-  [here](https://dinosaure.github.io/bechamel/fact.html) this output is buildable with
+  [here](https://mirage.github.io/bechamel/fact.html) this output is buildable with
   `dune build examples/fact.html`
 - the CLI output (with `notty`)
 - a benchmark with system specifics metrics (such as `perf`)
 
 The end user is able to introspect result by himself and produce an other output
 if he wants. Bechamel wants to be easy to use and extend. The documentation of
-Bechamel is available [here](https://dinosaure.github.io/bechamel/). Then, the
+Bechamel is available [here](https://mirage.github.io/bechamel/). Then, the
 library does not require too much dependencies.
