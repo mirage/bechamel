@@ -3,13 +3,15 @@ type packed = V : ([ `Init ] -> unit -> 'a) -> packed
 module Elt : sig
   type t
 
-  val unsafe_make : name:string -> (unit -> 'a) Staged.t -> t
+  val unsafe_make : ?finalizer:(unit -> unit) -> name:string -> (unit -> 'a) Staged.t -> t
 
   val key : t -> int
 
   val name : t -> string
 
   val fn : t -> packed
+
+  val finalizer : t -> unit -> unit
 end
 
 type t
@@ -20,7 +22,7 @@ type fmt_indexed =
 type fmt_grouped =
   (string -> string -> string, Format.formatter, unit, string) format4
 
-val make : name:string -> (unit -> 'a) Staged.t -> t
+val make : name:string -> ?finalizer:(unit -> unit) -> (unit -> 'a) Staged.t -> t
 (** [make ~name fn] is a naming benchmark measuring [fn]. [fn] can be
     constructed with {!Staged.stage}:
 
@@ -32,6 +34,7 @@ val make : name:string -> (unit -> 'a) Staged.t -> t
 
 val make_indexed :
   name:string ->
+  ?finalizer:(int -> unit -> unit) ->
   ?fmt:fmt_indexed ->
   args:int list ->
   (int -> (unit -> 'a) Staged.t) ->

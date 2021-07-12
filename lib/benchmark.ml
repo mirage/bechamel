@@ -115,6 +115,9 @@ let run cfg measures test : t =
     incr idx
   done ;
 
+  let finalizer = Test.Elt.finalizer test in
+  finalizer () ;
+
   let samples = !idx in
   let labels = Array.map Measure.label measures in
 
