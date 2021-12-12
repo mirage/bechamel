@@ -18,7 +18,8 @@ let witness ~compare : t Json_encoding.encoding =
     let kde = opt "kde" KDE.witness in
     let ols = req "result" OLS.witness in
     let desc = req "description" Desc.witness in
-    obj5 name desc dataset kde ols in
+    obj5 name desc dataset kde ols
+  in
   let series = req "series" (list serie) in
   conv
     (fun t ->
@@ -26,7 +27,8 @@ let witness ~compare : t Json_encoding.encoding =
         Hashtbl.fold
           (fun k (desc, dataset, kde, ols) a ->
             (k, desc, dataset, kde, ols) :: a)
-          t.series [] in
+          t.series []
+      in
       ( t.x_label,
         t.y_label,
         List.sort (fun (k0, _, _, _, _) (k1, _, _, _, _) -> compare k0 k1) l ))
@@ -51,12 +53,14 @@ let of_ols_results ~x_label ~y_label ols_results raws =
         (fun serie ols ->
           let open Rresult.R in
           let Benchmark.{ stats; lr = raws; kde = raws_kde } =
-            Hashtbl.find raws serie in
+            Hashtbl.find raws serie
+          in
           let res =
             Dataset.of_measurement_raws ~x_label ~y_label raws >>= fun raws ->
             KDE.of_kde_raws ~label:y_label raws_kde >>= fun raws_kde ->
             OLS.of_ols_result ~x_label ~y_label ols >>| fun ols ->
-            (stats, raws, raws_kde, ols) in
+            (stats, raws, raws_kde, ols)
+          in
           match res with
           | Ok (stats, raws, raws_kde, ols) ->
               Hashtbl.add series serie (stats, raws, raws_kde, ols)
@@ -80,14 +84,13 @@ let flat json : Jsonm.lexeme list =
   and base k = function
     | `A l -> arr [ `As ] k l
     | `O l -> obj [ `Os ] k l
-    | #value as x -> k [ x ] in
+    | #value as x -> k [ x ]
+  in
 
   base (fun l -> l) json
 
 type buffer = bytes * int * int
-
 type transmit = buffer -> buffer
-
 type 'a or_error = ('a, [ `Msg of string ]) result
 
 type 'a dst =
@@ -106,7 +109,6 @@ let channel filename =
   Channel oc
 
 type raws = (string, Benchmark.t) Hashtbl.t
-
 type ols_results = (string, (string, Analyze.OLS.t) Hashtbl.t) Hashtbl.t
 
 let emit :
@@ -123,7 +125,8 @@ let emit :
   let to_dst : type a. a dst -> Jsonm.dst = function
     | Manual _ -> `Manual
     | Buffer buffer -> `Buffer buffer
-    | Channel oc -> `Channel oc in
+    | Channel oc -> `Channel oc
+  in
   let encoder = Jsonm.encoder ~minify:true (to_dst dst) in
   let buf, off, len =
     match dst with
@@ -131,7 +134,8 @@ let emit :
         let buf, off, len = a in
         (ref buf, ref off, ref len)
     | Buffer _ -> (ref Bytes.empty, ref 0, ref 0)
-    | Channel _ -> (ref Bytes.empty, ref 0, ref 0) in
+    | Channel _ -> (ref Bytes.empty, ref 0, ref 0)
+  in
   let go json =
     let flat = flat json in
 
@@ -139,17 +143,18 @@ let emit :
       (fun lexeme ->
         match Jsonm.encode encoder (`Lexeme lexeme) with
         | `Ok -> ()
-        | `Partial ->
-        match dst with
-        | Manual transmit ->
-            let buf', off', len' =
-              transmit (!buf, !off, !len - Jsonm.Manual.dst_rem encoder) in
-            buf := buf' ;
-            off := off' ;
-            len := len' ;
-            Jsonm.Manual.dst encoder buf' off' len'
-        | Buffer _ -> ()
-        | Channel _ -> ())
+        | `Partial -> (
+            match dst with
+            | Manual transmit ->
+                let buf', off', len' =
+                  transmit (!buf, !off, !len - Jsonm.Manual.dst_rem encoder)
+                in
+                buf := buf' ;
+                off := off' ;
+                len := len' ;
+                Jsonm.Manual.dst encoder buf' off' len'
+            | Buffer _ -> ()
+            | Channel _ -> ()))
       flat ;
 
     let rec go : type a. a dst -> a -> unit or_error =
@@ -160,7 +165,8 @@ let emit :
       | `Ok, Manual _ -> Ok ()
       | `Partial, Manual transmit ->
           let buf', off', len' =
-            transmit (!buf, !off, !len - Jsonm.Manual.dst_rem encoder) in
+            transmit (!buf, !off, !len - Jsonm.Manual.dst_rem encoder)
+          in
           buf := buf' ;
           off := off' ;
           len := len' ;
@@ -168,9 +174,11 @@ let emit :
           go dst a
       (* XXX(dinosaure): [Jsonm] explains that these cases never occur. *)
       | `Partial, Buffer _ -> assert false
-      | `Partial, Channel _ -> assert false in
+      | `Partial, Channel _ -> assert false
+    in
 
-    go dst a in
+    go dst a
+  in
 
   let open Rresult.R in
   of_ols_results ~x_label ~y_label ols_results raw_results

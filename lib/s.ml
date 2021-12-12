@@ -6,14 +6,9 @@ module type MEASURE = sig
   type witness
 
   val label : witness -> string
-
   val unit : witness -> string
-
   val make : unit -> witness
-
   val load : witness -> unit
-
   val unload : witness -> unit
-
   val get : witness -> float
 end

@@ -1,7 +1,6 @@
 open Bechamel
 
 type t = { estimate : float; r_square : float option; ci95 : ci95 option }
-
 and ci95 = { r : float; l : float }
 
 let ci95_witness : ci95 Json_encoding.encoding =
@@ -23,7 +22,8 @@ let witness : t Json_encoding.encoding =
 let of_ols_result ~x_label ~y_label ols =
   let has_y_label = String.equal (Analyze.OLS.responder ols) y_label in
   let has_x_label =
-    List.exists (String.equal x_label) (Analyze.OLS.predictors ols) in
+    List.exists (String.equal x_label) (Analyze.OLS.predictors ols)
+  in
 
   if (not has_y_label) || not has_x_label
   then
@@ -50,5 +50,6 @@ let of_ols_result ~x_label ~y_label ols =
           with Found -> (
             match !estimate with
             | Some estimate -> estimate
-            | None -> assert false) in
+            | None -> assert false)
+        in
         Ok { estimate; r_square = Analyze.OLS.r_square ols; ci95 = None }

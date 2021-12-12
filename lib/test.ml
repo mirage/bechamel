@@ -7,9 +7,7 @@ module Elt = struct
     { key = 0; name; fn = V (fun `Init -> Staged.unstage fn) }
 
   let key { key; _ } = key
-
   let name { name; _ } = name
-
   let fn { fn; _ } = fn
 end
 
@@ -36,18 +34,15 @@ let make_indexed ~name ?(fmt : fmt_indexed = "%s:%d") ~args fn =
         (fun key ->
           {
             Elt.key;
-            Elt.name = Fmt.strf fmt name key;
+            Elt.name = Fmt.str fmt name key;
             Elt.fn = V (fun `Init -> Staged.unstage (fn key));
           })
         args;
   }
 
 let name { name; _ } = name
-
 let names { set; _ } = List.map Elt.name set
-
 let elements { set; _ } = set
-
 let expand ts = List.concat (List.map (fun t -> t.set) ts)
 
 let make_grouped ~name ?(fmt : fmt_grouped = "%s/%s") ts =
@@ -55,5 +50,5 @@ let make_grouped ~name ?(fmt : fmt_grouped = "%s/%s") ts =
   {
     name;
     set =
-      List.map (fun t -> { t with Elt.name = Fmt.strf fmt name t.Elt.name }) ts;
+      List.map (fun t -> { t with Elt.name = Fmt.str fmt name t.Elt.name }) ts;
   }

@@ -7,7 +7,8 @@ let sampling_witness : Benchmark.sampling Json_encoding.encoding =
   let a =
     case float
       (function `Geometric x -> Some x | _ -> None)
-      (fun x -> `Geometric x) in
+      (fun x -> `Geometric x)
+  in
   let b =
     case int (function `Linear x -> Some x | _ -> None) (fun x -> `Linear x)
   in

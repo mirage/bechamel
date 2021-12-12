@@ -60,14 +60,16 @@ let mul_mv ?(trans = false) a x =
         (cols, rows, get)
       else
         let get i j = a.(i).(j) in
-        (rows, cols, get) in
+        (rows, cols, get)
+    in
     if n <> Array.length x then failwith "Dimension mismatch" ;
     let result = Array.make m 0. in
     for i = 0 to m - 1 do
       let v, _ =
         Array.fold_left
           (fun (acc, j) x -> (acc +. (get i j *. x), succ j))
-          (0., 0) x in
+          (0., 0) x
+      in
       result.(i) <- v
     done ;
     result

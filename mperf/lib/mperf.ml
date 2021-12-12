@@ -120,9 +120,7 @@ module Attr = struct
       | _ -> invalid_arg "kind_of_string"
 
     let to_string t = string_of_t t |> String.uncapitalize_ascii
-
     let of_string s = String.capitalize_ascii s |> t_of_string
-
     let compare = compare
   end
 
@@ -166,7 +164,6 @@ external perf_event_ioc_reset : Unix.file_descr -> unit
   = "mperf_event_ioc_reset"
 
 external enable_all : unit -> unit = "mperf_events_enable_all"
-
 external disable_all : unit -> unit = "mperf_events_disable_all"
 
 module FSet = Set.Make (struct
@@ -181,10 +178,12 @@ let make ?(pid = 0) ?(cpu = -1) ?group ?(flags = []) attr =
 
   let attr_flags =
     let open Attr in
-    FSet.fold (fun f acc -> acc + Attr.(flag_to_enum f)) attr.flags 0 in
+    FSet.fold (fun f acc -> acc + Attr.(flag_to_enum f)) attr.flags 0
+  in
 
   let group =
-    match group with None -> -1 | Some { fd; _ } -> (Obj.magic fd : int) in
+    match group with None -> -1 | Some { fd; _ } -> (Obj.magic fd : int)
+  in
   let kind_enum = Attr.(Kind.(to_enum attr.kind)) in
   Attr.
     {
@@ -197,7 +196,6 @@ let make ?(pid = 0) ?(cpu = -1) ?group ?(flags = []) attr =
 let kind c = c.kind
 
 external get_int64 : bytes -> int -> int64 = "%caml_bytes_get64"
-
 external swap64 : int64 -> int64 = "caml_int64_bswap"
 
 let get_int64 buf off =
@@ -210,11 +208,8 @@ let read c =
   get_int64 buf 0
 
 let reset c = perf_event_ioc_reset c.fd
-
 let enable c = perf_event_ioc_enable c.fd
-
 let disable c = perf_event_ioc_disable c.fd
-
 let close c = Unix.close c.fd
 
 type execution = {
@@ -249,20 +244,25 @@ let with_process_exn ?env ?timeout ?stdout ?stderr cmd attrs =
                 [ Disabled; Inherit; Enable_on_exec ];
             kind = a.kind;
           })
-      attrs in
+      attrs
+  in
   let counters = List.map make attrs in
   let tmp_stdout_name =
     match stdout with
     | None -> Filename.temp_file "ocaml-perf" "stdout"
-    | Some s -> s in
+    | Some s -> s
+  in
   let tmp_stderr_name =
     match stderr with
     | None -> Filename.temp_file "ocaml-perf" "stderr"
-    | Some s -> s in
+    | Some s -> s
+  in
   let tmp_stdout =
-    Unix.(openfile tmp_stdout_name [ O_WRONLY; O_CREAT; O_TRUNC ] 0o600) in
+    Unix.(openfile tmp_stdout_name [ O_WRONLY; O_CREAT; O_TRUNC ] 0o600)
+  in
   let tmp_stderr =
-    Unix.(openfile tmp_stderr_name [ O_WRONLY; O_CREAT; O_TRUNC ] 0o600) in
+    Unix.(openfile tmp_stderr_name [ O_WRONLY; O_CREAT; O_TRUNC ] 0o600)
+  in
   match Unix.fork () with
   | 0 ->
       (* child *)
@@ -299,7 +299,8 @@ let with_process_exn ?env ?timeout ?stdout ?stderr cmd attrs =
             List.fold_left
               (fun a c -> KindMap.add c.kind (read c) a)
               KindMap.empty counters;
-        } in
+        }
+      in
       List.iter close counters ;
       (* Remove stdout/stderr files iff they were left unspecified. *)
       (match stdout with None -> Unix.unlink tmp_stdout_name | _ -> ()) ;

@@ -5,12 +5,10 @@ module Make (Functor : S.FUNCTOR) = struct
 
   module type Extension = sig
     type x
-
     type t += T of x
   end
 
   type 'a extension = (module Extension with type x = 'a)
-
   type instance = V : 'a * 'a Functor.t -> instance
 
   let handlers = Hashtbl.create 16
@@ -21,7 +19,6 @@ module Make (Functor : S.FUNCTOR) = struct
     val instance : t Functor.t
   end) : Extension with type x = X.t = struct
     type x = X.t
-
     type t += T of x
 
     let () =

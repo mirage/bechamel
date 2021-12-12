@@ -4,7 +4,6 @@ module OLS = struct
     type t = { r : float; l : float }
 
     let pp ppf x = Fmt.pf ppf "@[<hov>%f to %f@]" x.r x.l
-
     let bad = { r = neg_infinity; l = neg_infinity }
   end
 
@@ -12,7 +11,8 @@ module OLS = struct
   let make_lr_inputs ~responder ~predictors m =
     let responder_accessor = Measurement_raw.get ~label:responder in
     let predictors_accessor =
-      Array.map (fun label -> Measurement_raw.get ~label) predictors in
+      Array.map (fun label -> Measurement_raw.get ~label) predictors
+    in
     ( Array.init (Array.length m) (fun i ->
           Array.map (fun a -> a m.(i)) predictors_accessor),
       Array.init (Array.length m) (fun i -> responder_accessor m.(i)) )
@@ -31,7 +31,8 @@ module OLS = struct
 
   let r_square m ~responder ~predictors r =
     let predictors_matrix, responder_vector =
-      make_lr_inputs ~responder ~predictors m in
+      make_lr_inputs ~responder ~predictors m
+    in
     let sum_responder = Array.fold_left ( +. ) 0. responder_vector in
     let mean = sum_responder /. float (Array.length responder_vector) in
     let tot_ss = ref 0. in
@@ -41,7 +42,8 @@ module OLS = struct
       for j = 0 to Array.length r - 1 do
         x := !x +. (predictors_matrix.(i).(j) *. r.(j))
       done ;
-      !x in
+      !x
+    in
     for i = 0 to Array.length responder_vector - 1 do
       tot_ss := !tot_ss +. ((responder_vector.(i) -. mean) ** 2.) ;
       res_ss := !res_ss +. ((responder_vector.(i) -. predicted i) ** 2.)
@@ -76,7 +78,7 @@ module OLS = struct
       arr.(i) <- Random.int max
     done
 
-  let quantile_of_array arr ?(failures = 0) ~len ~low ~high =
+  let quantile_of_array ?(failures = 0) ~len ~low ~high arr =
     Array.sort (compare : float -> float -> int) arr ;
     let index q = int_of_float ((float len *. q) +. (0.5 *. float failures)) in
     let extended_get i = if i >= len then infinity else arr.(i) in
@@ -122,11 +124,13 @@ module OLS = struct
         let r_square =
           if do_r_square
           then Some (r_square m ~responder ~predictors estimates)
-          else None in
+          else None
+        in
         let ci95 =
           match trials with
           | 0 -> None
-          | trials -> Some (bootstrap ~trials ~responder ~predictors m) in
+          | trials -> Some (bootstrap ~trials ~responder ~predictors m)
+        in
         { predictors; responder; value = Ok { estimates; ci95; r_square } }
     | Error _ as err -> { predictors; responder; value = err }
 
@@ -147,7 +151,6 @@ module OLS = struct
     | Error (`Msg err) -> Format.fprintf ppf "%s" err
 
   let predictors { predictors; _ } = Array.to_list predictors
-
   let responder { responder; _ } = responder
 
   let estimates { value; _ } =
@@ -166,26 +169,32 @@ module RANSAC = struct
     let len = float (Array.length r) in
     let mean_x =
       let sum_x = Array.fold_right (fun (x, _) acc -> x +. acc) r 0. in
-      sum_x /. len in
+      sum_x /. len
+    in
     let mean_y =
       let sum_y = Array.fold_right (fun (_, y) acc -> y +. acc) r 0. in
-      sum_y /. len in
+      sum_y /. len
+    in
     let variance_x =
       let sumvar =
         Array.fold_right
           (fun (x, _) acc ->
             let v = x -. mean_x in
             (v *. v) +. acc)
-          r 0. in
-      sumvar /. len in
+          r 0.
+      in
+      sumvar /. len
+    in
     let covariance_x_y =
       let sumcovar =
         Array.fold_right
           (fun (x, y) acc ->
             let v = (x -. mean_x) *. (y -. mean_y) in
             v +. acc)
-          r 0. in
-      sumcovar /. len in
+          r 0.
+      in
+      sumcovar /. len
+    in
     let a = covariance_x_y /. variance_x in
     let b = mean_y -. (a *. mean_x) in
     (a, b)
@@ -196,7 +205,8 @@ module RANSAC = struct
       let x, y = data.(i) in
       let diff =
         let d = (a *. x) +. b -. y in
-        d *. d in
+        d *. d
+      in
       acc := !acc +. diff
     done ;
     !acc /. float (Array.length data)
@@ -223,12 +233,16 @@ module RANSAC = struct
     let estimate x = (a *. x) +. b in
     let dy (x, y) =
       let d = y -. estimate x in
-      d *. d in
+      d *. d
+    in
     let sum_dy = sum (Array.map dy r) in
-    let mean_x = sum (Array.map (fun (x, _) -> x) r) /. float (Array.length r) in
+    let mean_x =
+      sum (Array.map (fun (x, _) -> x) r) /. float (Array.length r)
+    in
     let dx (x, _) =
       let d = x -. mean_x in
-      d *. d in
+      d *. d
+    in
     sqrt (sum_dy /. float (Array.length r - 2)) /. sqrt (sum (Array.map dx r))
 
   type t = {
@@ -259,7 +273,8 @@ module RANSAC = struct
             (* Couldn't extract a model, just return crude affine adjustment *)
             affine_adjustment a
         | Some { Ransac.model; _ } -> model
-      else affine_adjustment a in
+      else affine_adjustment a
+    in
     let min_value =
       Array.fold_left
         (fun (row_min, val_min) (row, value) ->
@@ -267,7 +282,8 @@ module RANSAC = struct
           if val_min < value || value <= 0.
           then (row_min, val_min)
           else (row, value))
-        (0., max_float) a in
+        (0., max_float) a
+    in
     let correct_float f = classify_float f = FP_normal in
     let max_value =
       Array.fold_left
@@ -276,7 +292,8 @@ module RANSAC = struct
           if val_max > value || not (correct_float value)
           then (row_max, val_max)
           else (row, value))
-        (0., min_float) a in
+        (0., min_float) a
+    in
     let standard_error = standard_error ~a:mean_value ~b:constant a in
     {
       predictor;
@@ -289,17 +306,11 @@ module RANSAC = struct
     }
 
   let responder { responder; _ } = responder
-
   let predictor { predictor; _ } = predictor
-
   let mean { mean_value; _ } = mean_value
-
   let constant { constant; _ } = constant
-
   let min { min_value; _ } = min_value
-
   let max { max_value; _ } = max_value
-
   let error { standard_error; _ } = standard_error
 end
 

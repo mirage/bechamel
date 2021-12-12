@@ -5,7 +5,6 @@ module Ext = Ext.Make (struct
 end)
 
 type 'a measure = 'a Ext.extension
-
 type witness = Ext.t
 
 let register : type w. w impl -> w measure =
@@ -42,5 +41,4 @@ let unit : witness -> string =
 type value = Ext.instance = V : 'w * 'w impl -> value
 
 let prj w = Ext.prj w
-
 let run = "run"

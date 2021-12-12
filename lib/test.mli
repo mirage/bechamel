@@ -4,11 +4,8 @@ module Elt : sig
   type t
 
   val unsafe_make : name:string -> (unit -> 'a) Staged.t -> t
-
   val key : t -> int
-
   val name : t -> string
-
   val fn : t -> packed
 end
 

@@ -32,7 +32,6 @@ module Attr : sig
       | Dummy
 
     val to_string : t -> string
-
     val of_string : string -> t
   end
 

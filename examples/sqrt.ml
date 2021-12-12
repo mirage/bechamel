@@ -1,9 +1,7 @@
 open Bechamel
 
 let () = Random.self_init ()
-
 let random_max = 32767.
-
 let ( <.> ) f g x = f (g x)
 
 let normal n =
@@ -36,10 +34,12 @@ let test = Test.make_indexed ~name:"sqrt" ~fmt:"%s %d" ~args:[ 10; 50 ] sqrt
 
 let benchmark () =
   let ols =
-    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |] in
+    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |]
+  in
   let instances = Bechamel_perf.Instance.[ cpu_clock ] in
   let cfg =
-    Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) () in
+    Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) ()
+  in
   let raw_results = Benchmark.all cfg instances test in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances
