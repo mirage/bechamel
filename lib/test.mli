@@ -1,4 +1,10 @@
-type packed = V : ([ `Init ] -> unit -> 'a) -> packed
+type packed =
+  | V : {
+      fn : [ `Init ] -> 'a -> 'b;
+      resource : int -> 'a array;
+      free : 'a array -> unit;
+    }
+      -> packed
 
 module Elt : sig
   type t
@@ -26,6 +32,13 @@ val make : name:string -> (unit -> 'a) Staged.t -> t
         Test.make ~name:"unix-write"
           (Staged.stage @@ fun () -> Unix.write Unix.stdout "Hello World!")
     ]} *)
+
+val make_with_resource :
+  name:string ->
+  allocate:(unit -> 'a) ->
+  free:('a -> unit) ->
+  ('a -> 'b) Staged.t ->
+  t
 
 val make_indexed :
   name:string ->

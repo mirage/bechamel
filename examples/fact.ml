@@ -59,7 +59,8 @@ let benchmark () =
     Instance.[ minor_allocated; major_allocated; monotonic_clock ]
   in
   let cfg =
-    Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) ()
+    Benchmark.cfg ~limit:2000 ~stabilize:true ~quota:(Time.second 0.5)
+      ~kde:(Some 1000) ()
   in
   let raw_results =
     Benchmark.all cfg instances

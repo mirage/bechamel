@@ -9,6 +9,7 @@ val cfg :
   ?kde:int option ->
   ?sampling:sampling ->
   ?stabilize:bool ->
+  ?compaction:bool ->
   ?start:int ->
   unit ->
   configuration

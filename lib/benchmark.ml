@@ -1,6 +1,8 @@
-let runnable f i =
+external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
+
+let runnable f vs i =
   for _ = 1 to i do
-    ignore (Sys.opaque_identity (f ()))
+    ignore (Sys.opaque_identity (f (unsafe_get vs (i - 1))))
   done
   [@@inline]
 
@@ -42,6 +44,7 @@ type configuration = {
   start : int;
   sampling : sampling;
   stabilize : bool;
+  compaction : bool;
   quota : Time.span;
   kde : int option;
   limit : int;
@@ -54,15 +57,15 @@ type t = {
 }
 
 let cfg ?(limit = 3000) ?(quota = Time.second 1.) ?(kde = None)
-    ?(sampling = `Geometric 1.01) ?(stabilize = true) ?(start = 1) () :
-    configuration =
-  { limit; start; quota; sampling; kde; stabilize }
+    ?(sampling = `Geometric 1.01) ?(stabilize = true) ?(compaction = true)
+    ?(start = 1) () : configuration =
+  { limit; start; quota; sampling; kde; stabilize; compaction }
 
 let run cfg measures test : t =
   let idx = ref 0 in
   let run = ref cfg.start in
-  let (Test.V init) = Test.Elt.fn test in
-  let fn = init `Init in
+  let (Test.V { fn; resource; free }) = Test.Elt.fn test in
+  let fn = fn `Init in
 
   let measures = Array.of_list measures in
   let length = Array.length measures in
@@ -82,6 +85,12 @@ let run cfg measures test : t =
   while (not (exceeded_allowed_time cfg.quota init_time)) && !idx < cfg.limit do
     let current_run = !run in
     let current_idx = !idx in
+    let resources = resource !run in
+
+    if cfg.stabilize then stabilize_garbage_collector () ;
+
+    if not cfg.compaction
+    then Gc.set { (Gc.get ()) with Gc.max_overhead = 1_000_000 } ;
 
     (* The returned measurements are a difference betwen a measurement [m0]
        taken before running the tested function [fn] and a measurement taken
@@ -90,11 +99,13 @@ let run cfg measures test : t =
       m0.(i) <- records.(i) ()
     done ;
 
-    runnable fn current_run ;
+    runnable fn resources current_run ;
 
     for i = 0 to length - 1 do
       m1.(i) <- records.(i) ()
     done ;
+
+    free resources ;
 
     m.(current_idx * (length + 1)) <- float_of_int current_run ;
     for i = 1 to length do
@@ -141,21 +152,24 @@ let run cfg measures test : t =
           (not (exceeded_allowed_time cfg.quota init_time'))
           && !current_idx < kde_limit
         do
+          let resources = resource 1 in
+
           for i = 0 to length - 1 do
             m0.(i) <- records.(i) ()
           done ;
 
-          ignore (Sys.opaque_identity (fn ())) ;
+          ignore (Sys.opaque_identity (fn (unsafe_get resources 0))) ;
 
           for i = 0 to length - 1 do
             m1.(i) <- records.(i) ()
           done ;
 
+          free resources ;
+
           for i = 0 to length - 1 do
             mkde.((!current_idx * length) + i) <- m1.(i) -. m0.(i)
           done ;
 
-          total_run := !total_run + !run ;
           incr current_idx
         done ;
         let kde_raw idx =
