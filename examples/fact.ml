@@ -13,9 +13,7 @@ let imp_fact x =
   !r
 
 let rec fun_fact x = if x = 0 then 1 else x * fun_fact (x - 1)
-
 let random_max = 32767.
-
 let ( <.> ) f g x = f (g x)
 
 let normal n =
@@ -55,14 +53,18 @@ let test1 =
 
 let benchmark () =
   let ols =
-    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |] in
+    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |]
+  in
   let instances =
-    Instance.[ minor_allocated; major_allocated; monotonic_clock ] in
+    Instance.[ minor_allocated; major_allocated; monotonic_clock ]
+  in
   let cfg =
-    Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) () in
+    Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) ()
+  in
   let raw_results =
     Benchmark.all cfg instances
-      (Test.make_grouped ~name:"factorial" ~fmt:"%s %s" [ test0; test1 ]) in
+      (Test.make_grouped ~name:"factorial" ~fmt:"%s %s" [ test0; test1 ])
+  in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances
   in
@@ -83,5 +85,6 @@ let () =
     let open Bechamel_js in
     emit ~dst:(Channel stdout) nothing ~compare ~x_label:Measure.run
       ~y_label:(Measure.label Instance.monotonic_clock)
-      results in
+      results
+  in
   match results with Ok () -> () | Error (`Msg err) -> invalid_arg err

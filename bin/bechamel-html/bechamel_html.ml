@@ -4,15 +4,17 @@
 let string_find str target =
   let exception Not_equal in
   let substring_equal a a_i b =
-    String.iteri (fun i c -> if c <> a.[a_i + i] then raise Not_equal) b in
+    String.iteri (fun i c -> if c <> a.[a_i + i] then raise Not_equal) b
+  in
   let rec loop i =
     match String.index_from_opt str i target.[0] with
     | None -> None
     | Some i when String.length str - i < String.length target -> None
-    | Some i ->
-    match substring_equal str i target with
-    | exception Not_equal -> loop (i + 1)
-    | () -> Some i in
+    | Some i -> (
+        match substring_equal str i target with
+        | exception Not_equal -> loop (i + 1)
+        | () -> Some i)
+  in
   if String.length target = 0 then None else loop 0
 
 let stdin_to_stdout () =
@@ -54,7 +56,8 @@ let print_js_script () =
   let js = Js_file.data in
   let separator = "//BECHAMEL_CONTENTS//" in
   let head, tail =
-    cut ~error_msg:"Separator not found in js file" js separator in
+    cut ~error_msg:"Separator not found in js file" js separator
+  in
   print_string head ;
   print_string "contents = " ;
   print_endline first_line ;

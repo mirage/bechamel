@@ -8,7 +8,6 @@ let load_file filename =
   Bytes.unsafe_to_string rs
 
 let sexp_linux = "(-lrt)"
-
 let sexp_empty = "()"
 
 let () =
@@ -21,16 +20,19 @@ let () =
           | "freebsd" -> `FreeBSD
           | "windows" | "mingw64" | "cygwin" -> `Windows
           | "macosx" -> `MacOSX
-          | v -> invalid_arg "Invalid argument of system option: %s" v in
+          | v -> invalid_arg "Invalid argument of system option: %s" v
+        in
         (system, output)
     | _ ->
         invalid_arg "Expected `%s --system <system> -o <output>' got `%s'"
           Sys.argv.(0)
-          (String.concat " " (Array.to_list Sys.argv)) in
+          (String.concat " " (Array.to_list Sys.argv))
+  in
   let oc_ml, oc_c, oc_sexp =
     ( open_out (output ^ ".ml"),
       open_out (output ^ "_stubs.c"),
-      open_out (output ^ ".sexp") ) in
+      open_out (output ^ ".sexp") )
+  in
   let ml, c =
     match system with
     | `Linux | `FreeBSD ->

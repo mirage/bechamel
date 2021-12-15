@@ -16,7 +16,8 @@ let stabilize_garbage_collector () =
     Gc.compact () ;
     let stat = Gc.stat () in
     if stat.Gc.live_words <> last_heap_live_words
-    then go (fail - 1) stat.Gc.live_words in
+    then go (fail - 1) stat.Gc.live_words
+  in
   go 10 0
 
 let exceeded_allowed_time allowed_time_span t =
@@ -105,10 +106,12 @@ let run cfg measures test : t =
       | `Linear k -> current_run + k
       | `Geometric scale ->
           let next_geometric =
-            int_of_float (float_of_int current_run *. scale) in
+            int_of_float (float_of_int current_run *. scale)
+          in
           if next_geometric >= current_run + 1
           then next_geometric
-          else current_run + 1 in
+          else current_run + 1
+    in
 
     total_run := !total_run + !run ;
     run := next ;
@@ -121,7 +124,8 @@ let run cfg measures test : t =
   let measurement_raw idx =
     let run = m.(idx * (length + 1)) in
     let measures = Array.sub m ((idx * (length + 1)) + 1) length in
-    Measurement_raw.make ~measures ~labels run in
+    Measurement_raw.make ~measures ~labels run
+  in
   let lr_raw = Array.init samples measurement_raw in
 
   (* Additional measurement for kde, if requested. Note that if these
@@ -156,9 +160,11 @@ let run cfg measures test : t =
         done ;
         let kde_raw idx =
           let measures = Array.sub mkde (idx * length) length in
-          Measurement_raw.make ~measures ~labels 1. in
+          Measurement_raw.make ~measures ~labels 1.
+        in
 
-        Some (Array.init !current_idx kde_raw) in
+        Some (Array.init !current_idx kde_raw)
+  in
 
   let final_time = Time.of_uint64_ns (Monotonic_clock.now ()) in
   Array.iter Measure.unload measures ;
@@ -173,7 +179,8 @@ let run cfg measures test : t =
       instances = Array.to_list labels;
       samples;
       time = Time.span init_time final_time;
-    } in
+    }
+  in
 
   { stats; lr = lr_raw; kde = kde_raw }
 

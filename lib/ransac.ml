@@ -49,10 +49,12 @@ type ('a, 'b) result = { model : 'b; input : 'a array; error : float }
 
 let one_round (r : ('a, 'b) input) : ('a, 'b) result option =
   let in_subset, _out_of_subset =
-    random_partition (min (Array.length r.data / 2) r.subset_size) r.data in
+    random_partition (min (Array.length r.data / 2) r.subset_size) r.data
+  in
   let model = r.model in_subset in
   let fiting =
-    array_filter (fun p -> r.distance p model < r.filter_distance) r.data in
+    array_filter (fun p -> r.distance p model < r.filter_distance) r.data
+  in
   if Array.length fiting > r.minimum_valid
   then
     let input = Array.append in_subset fiting in
@@ -71,6 +73,8 @@ let ransac r : (_, _) result option =
         | (Some { error; _ } as new_best), Some { error = best_error; _ }
           when error < best_error ->
             new_best
-        | Some _, Some _ -> best in
-      loop (n + 1) best in
+        | Some _, Some _ -> best
+      in
+      loop (n + 1) best
+  in
   loop 0 None

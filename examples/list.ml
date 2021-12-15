@@ -12,16 +12,16 @@ let make_list words =
   ignore (go ((words / 3) + 1) [])
 
 (* From our function [make_list], we make an indexed (by [args]) test. It's a list
-  of tests which are applied with [args] such as:
+   of tests which are applied with [args] such as:
 
-   {[
-     let test =
-       [ make_list 0
-       ; make_list 10
-       ; make_list 100
-       ; make_list 400
-       ; make_list 1000 ]
-   ]} *)
+    {[
+      let test =
+        [ make_list 0
+        ; make_list 10
+        ; make_list 100
+        ; make_list 400
+        ; make_list 1000 ]
+    ]} *)
 let test =
   Test.make_indexed ~name:"list" ~fmt:"%s %d" ~args:[ 0; 10; 100; 400; 1000 ]
     make_list
@@ -56,11 +56,14 @@ let test =
 
 let benchmark () =
   let ols =
-    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |] in
+    Analyze.ols ~bootstrap:0 ~r_square:true ~predictors:Measure.[| run |]
+  in
   let instances =
-    Instance.[ minor_allocated; major_allocated; monotonic_clock ] in
+    Instance.[ minor_allocated; major_allocated; monotonic_clock ]
+  in
   let cfg =
-    Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) () in
+    Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) ()
+  in
   let raw_results = Benchmark.all cfg instances test in
   let results =
     List.map (fun instance -> Analyze.all ols instance raw_results) instances
@@ -83,6 +86,7 @@ let () =
   let window =
     match winsize Unix.stdout with
     | Some (w, h) -> { Bechamel_notty.w; h }
-    | None -> { Bechamel_notty.w = 80; h = 1 } in
+    | None -> { Bechamel_notty.w = 80; h = 1 }
+  in
   let results, _ = benchmark () in
   img (window, results) |> eol |> output_image

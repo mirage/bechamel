@@ -43,13 +43,9 @@ module OLS : sig
     t
 
   val pp : t Fmt.t
-
   val predictors : t -> string list
-
   val responder : t -> string
-
   val estimates : t -> float list option
-
   val r_square : t -> float option
 end
 
@@ -64,19 +60,12 @@ module RANSAC : sig
     t
 
   val pp : t Fmt.t
-
   val responder : t -> string
-
   val predictor : t -> string
-
   val mean : t -> float
-
   val constant : t -> float
-
   val max : t -> float * float
-
   val min : t -> float * float
-
   val error : t -> float
 end
 
