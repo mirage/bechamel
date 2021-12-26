@@ -1,10 +1,29 @@
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 
-let runnable f vs i =
+let always x _ = x
+let ( <.> ) f g x = f (g x)
+let empty_array = [||]
+
+let runnable_with_resources f vs i =
   for _ = 1 to i do
     ignore (Sys.opaque_identity (f (unsafe_get vs (i - 1))))
   done
   [@@inline]
+
+let runnable_with_resource f v i =
+  for _ = 1 to i do
+    ignore (Sys.opaque_identity (f v))
+  done
+  [@@inline]
+
+let runnable :
+    type a v t. (a, v, t) Test.kind -> (a -> 'b) -> a -> a array -> int -> unit
+    =
+ fun k f v vs i ->
+  match k with
+  | Test.Uniq -> runnable_with_resource f v i
+  | Test.Multiple -> runnable_with_resources f vs i
+ [@@inline]
 
 let record measure =
   let (Measure.V (m, (module M))) = Measure.prj measure in
@@ -64,8 +83,23 @@ let cfg ?(limit = 3000) ?(quota = Time.second 1.) ?(kde = None)
 let run cfg measures test : t =
   let idx = ref 0 in
   let run = ref cfg.start in
-  let (Test.V { fn; resource; free }) = Test.Elt.fn test in
+  let (Test.V { fn; kind; allocate; free }) = Test.Elt.fn test in
   let fn = fn `Init in
+  let (allocate0 : unit -> _), free0, (allocate1 : int -> _), free1 =
+    match kind with
+    | Test.Uniq ->
+        ( Test.Uniq.prj <.> allocate,
+          free <.> Test.Uniq.inj,
+          always empty_array,
+          ignore )
+    | Test.Multiple ->
+        let[@warning "-8"] [| v |] = Test.Multiple.prj (allocate 1) in
+        ( always v,
+          (fun v -> free (Test.Multiple.inj [| v |])),
+          Test.Multiple.prj <.> allocate,
+          free <.> Test.Multiple.inj )
+  in
+  let resource = allocate0 () in
 
   let measures = Array.of_list measures in
   let length = Array.length measures in
@@ -85,7 +119,7 @@ let run cfg measures test : t =
   while (not (exceeded_allowed_time cfg.quota init_time)) && !idx < cfg.limit do
     let current_run = !run in
     let current_idx = !idx in
-    let resources = resource !run in
+    let resources = allocate1 !run in
 
     if cfg.stabilize then stabilize_garbage_collector () ;
 
@@ -99,13 +133,13 @@ let run cfg measures test : t =
       m0.(i) <- records.(i) ()
     done ;
 
-    runnable fn resources current_run ;
+    runnable kind fn resource resources current_run ;
 
     for i = 0 to length - 1 do
       m1.(i) <- records.(i) ()
     done ;
 
-    free resources ;
+    free1 resources ;
 
     m.(current_idx * (length + 1)) <- float_of_int current_run ;
     for i = 1 to length do
@@ -152,7 +186,7 @@ let run cfg measures test : t =
           (not (exceeded_allowed_time cfg.quota init_time'))
           && !current_idx < kde_limit
         do
-          let resources = resource 1 in
+          let resources = allocate1 1 in
 
           for i = 0 to length - 1 do
             m0.(i) <- records.(i) ()
@@ -164,7 +198,7 @@ let run cfg measures test : t =
             m1.(i) <- records.(i) ()
           done ;
 
-          free resources ;
+          free1 resources ;
 
           for i = 0 to length - 1 do
             mkde.((!current_idx * length) + i) <- m1.(i) -. m0.(i)
@@ -181,6 +215,7 @@ let run cfg measures test : t =
   in
 
   let final_time = Time.of_uint64_ns (Monotonic_clock.now ()) in
+  free0 resource ;
   Array.iter Measure.unload measures ;
 
   let stats =

@@ -1,13 +1,49 @@
+type ('a, 't) app
+
+module Uniq : sig
+  type t
+
+  external inj : 'a -> ('a, t) app = "%identity"
+  external prj : ('a, t) app -> 'a = "%identity"
+  val unit : (unit, t) app
+end = struct
+  type t
+
+  external inj : 'a -> ('a, t) app = "%identity"
+  external prj : ('a, t) app -> 'a = "%identity"
+
+  let unit = inj ()
+end
+
+module Multiple : sig
+  type t
+
+  external inj : 'a array -> ('a, t) app = "%identity"
+  external prj : ('a, t) app -> 'a array = "%identity"
+end = struct
+  type t
+
+  external inj : 'a array -> ('a, t) app = "%identity"
+  external prj : ('a, t) app -> 'a array = "%identity"
+end
+
 type packed =
   | V : {
       fn : [ `Init ] -> 'a -> 'b;
-      resource : int -> 'a array;
-      free : 'a array -> unit;
+      kind : ('a, 'v, 't) kind;
+      allocate : 'v -> ('a, 't) app;
+      free : ('a, 't) app -> unit;
     }
       -> packed
 
+and ('a, 'v, 'k) kind =
+  | Uniq : ('a, unit, Uniq.t) kind
+  | Multiple : ('a, int, Multiple.t) kind
+
+let uniq = Uniq
+let multiple = Multiple
 let always v _ = v
-let unit n = Array.init n (always ())
+let ( <.> ) f g x = f (g x)
 
 module Elt = struct
   type t = { key : int; name : string; fn : packed }
@@ -20,7 +56,8 @@ module Elt = struct
         V
           {
             fn = (fun `Init -> Staged.unstage fn);
-            resource = unit;
+            kind = Uniq;
+            allocate = always Uniq.unit;
             free = always ();
           };
     }
@@ -50,7 +87,8 @@ let make ~name fn =
             V
               {
                 fn = (fun `Init -> Staged.unstage fn);
-                resource = unit;
+                kind = Uniq;
+                allocate = always Uniq.unit;
                 free = always ();
               };
         };
@@ -61,7 +99,7 @@ external unsafe_array_make : int -> 'a -> 'a array = "caml_make_vect"
 external unsafe_array_get : 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_array_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
 
-let make_allocate f = function
+let make_multiple_allocate f = function
   | 0 -> [||]
   | len ->
       let vs = unsafe_array_make len (f ()) in
@@ -70,29 +108,59 @@ let make_allocate f = function
       done ;
       vs
 
-let make_free f arr =
+let make_multiple_free f arr =
   for i = 0 to Array.length arr - 1 do
     f (unsafe_array_get arr i)
   done
 
-let make_with_resource ~name ~allocate ~free fn =
-  {
-    name;
-    set =
-      [
-        {
-          Elt.key = 0;
-          Elt.name;
-          Elt.fn =
-            V
-              {
-                fn = (fun `Init -> Staged.unstage fn);
-                resource = make_allocate allocate;
-                free = make_free free;
-              };
-        };
-      ];
-  }
+let make_with_resource :
+    type a v k.
+    name:string ->
+    (a, v, k) kind ->
+    allocate:(unit -> a) ->
+    free:(a -> unit) ->
+    (a -> 'b) Staged.t ->
+    t =
+ fun ~name kind ~allocate ~free fn ->
+  match kind with
+  | Uniq ->
+      {
+        name;
+        set =
+          [
+            {
+              Elt.key = 0;
+              Elt.name;
+              Elt.fn =
+                V
+                  {
+                    fn = (fun `Init -> Staged.unstage fn);
+                    allocate = Uniq.inj <.> allocate;
+                    free = free <.> Uniq.prj;
+                    kind = Uniq;
+                  };
+            };
+          ];
+      }
+  | Multiple ->
+      {
+        name;
+        set =
+          [
+            {
+              Elt.key = 0;
+              Elt.name;
+              Elt.fn =
+                V
+                  {
+                    fn = (fun `Init -> Staged.unstage fn);
+                    allocate = Multiple.inj <.> make_multiple_allocate allocate;
+                    free = make_multiple_free free <.> Multiple.prj;
+                    kind = Multiple;
+                  };
+            };
+          ];
+      }
 
 let make_indexed ~name ?(fmt : fmt_indexed = "%s:%d") ~args fn =
   {
@@ -107,33 +175,68 @@ let make_indexed ~name ?(fmt : fmt_indexed = "%s:%d") ~args fn =
               V
                 {
                   fn = (fun `Init -> Staged.unstage (fn key));
-                  resource = unit;
+                  kind = Uniq;
+                  allocate = always Uniq.unit;
                   free = always ();
                 };
           })
         args;
   }
 
-let make_indexed_with_resource ~name ?(fmt : fmt_indexed = "%s:%d") ~args
-    ~allocate ~free fn =
-  {
-    name;
-    set =
-      List.map
-        (fun key ->
-          {
-            Elt.key;
-            Elt.name = Fmt.str fmt name key;
-            Elt.fn =
-              V
-                {
-                  fn = (fun `Init -> Staged.unstage (fn key));
-                  resource = make_allocate (fun () -> allocate key);
-                  free = make_free free;
-                };
-          })
-        args;
-  }
+let make_indexed_with_resource :
+    type a f g.
+    name:string ->
+    ?fmt:fmt_indexed ->
+    args:int list ->
+    (a, f, g) kind ->
+    allocate:(int -> a) ->
+    free:(a -> unit) ->
+    (int -> (a -> 'b) Staged.t) ->
+    t =
+ fun ~name ?(fmt : fmt_indexed = "%s:%d") ~args kind ~allocate ~free fn ->
+  match kind with
+  | Uniq ->
+      {
+        name;
+        set =
+          List.map
+            (fun key ->
+              {
+                Elt.key;
+                Elt.name = Fmt.str fmt name key;
+                Elt.fn =
+                  V
+                    {
+                      fn = (fun `Init -> Staged.unstage (fn key));
+                      kind = Uniq;
+                      allocate = (fun () -> Uniq.inj (allocate key));
+                      free = free <.> Uniq.prj;
+                    };
+              })
+            args;
+      }
+  | Multiple ->
+      {
+        name;
+        set =
+          List.map
+            (fun key ->
+              {
+                Elt.key;
+                Elt.name = Fmt.str fmt name key;
+                Elt.fn =
+                  V
+                    {
+                      fn = (fun `Init -> Staged.unstage (fn key));
+                      kind = Multiple;
+                      allocate =
+                        Multiple.inj
+                        <.> make_multiple_allocate (fun () -> allocate key);
+                      free = make_multiple_free free <.> Multiple.prj;
+                    };
+              })
+            args;
+      }
 
 let name { name; _ } = name
 let names { set; _ } = List.map Elt.name set

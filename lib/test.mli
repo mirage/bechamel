@@ -1,10 +1,35 @@
-type packed =
+type ('a, 't) app
+
+module Uniq : sig
+  type t
+
+  external inj : 'a -> ('a, t) app = "%identity"
+  external prj : ('a, t) app -> 'a = "%identity"
+  val unit : (unit, t) app
+end
+
+module Multiple : sig
+  type t
+
+  external inj : 'a array -> ('a, t) app = "%identity"
+  external prj : ('a, t) app -> 'a array = "%identity"
+end
+
+type packed = private
   | V : {
       fn : [ `Init ] -> 'a -> 'b;
-      resource : int -> 'a array;
-      free : 'a array -> unit;
+      kind : ('a, 'v, 't) kind;
+      allocate : 'v -> ('a, 't) app;
+      free : ('a, 't) app -> unit;
     }
       -> packed
+
+and ('a, 'v, 'k) kind = private
+  | Uniq : ('a, unit, Uniq.t) kind
+  | Multiple : ('a, int, Multiple.t) kind
+
+val uniq : ('a, unit, Uniq.t) kind
+val multiple : ('a, int, Multiple.t) kind
 
 module Elt : sig
   type t
@@ -35,6 +60,7 @@ val make : name:string -> (unit -> 'a) Staged.t -> t
 
 val make_with_resource :
   name:string ->
+  ('a, 'f, 'g) kind ->
   allocate:(unit -> 'a) ->
   free:('a -> unit) ->
   ('a -> 'b) Staged.t ->
@@ -67,6 +93,7 @@ val make_indexed_with_resource :
   name:string ->
   ?fmt:fmt_indexed ->
   args:int list ->
+  ('a, 'f, 'g) kind ->
   allocate:(int -> 'a) ->
   free:('a -> unit) ->
   (int -> ('a -> 'b) Staged.t) ->
