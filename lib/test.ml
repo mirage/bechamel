@@ -114,6 +114,27 @@ let make_indexed ~name ?(fmt : fmt_indexed = "%s:%d") ~args fn =
         args;
   }
 
+let make_indexed_with_resource ~name ?(fmt : fmt_indexed = "%s:%d") ~args
+    ~allocate ~free fn =
+  {
+    name;
+    set =
+      List.map
+        (fun key ->
+          {
+            Elt.key;
+            Elt.name = Fmt.str fmt name key;
+            Elt.fn =
+              V
+                {
+                  fn = (fun `Init -> Staged.unstage (fn key));
+                  resource = make_allocate (fun () -> allocate key);
+                  free = make_free free;
+                };
+          })
+        args;
+  }
+
 let name { name; _ } = name
 let names { set; _ } = List.map Elt.name set
 let elements { set; _ } = set

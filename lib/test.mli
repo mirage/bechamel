@@ -63,6 +63,15 @@ val make_indexed :
     This kind of test is helpful to see results of the {b same} implementation
     with differents arguments (indexed by the given [int]). *)
 
+val make_indexed_with_resource :
+  name:string ->
+  ?fmt:fmt_indexed ->
+  args:int list ->
+  allocate:(int -> 'a) ->
+  free:('a -> unit) ->
+  (int -> ('a -> 'b) Staged.t) ->
+  t
+
 val make_grouped : name:string -> ?fmt:fmt_grouped -> t list -> t
 (** [make_grouped ~name ~fmt tests] is naming benchmarks. Name of each benchmark
     is [Fmt.strf fmt name arg] (default to [%s/%s]).
