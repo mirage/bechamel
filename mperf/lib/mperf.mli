@@ -106,22 +106,22 @@ val disable : t -> unit
 val close : t -> unit
 (** Free resources associated with a counter. *)
 
-type execution = private {
-  process_status : Unix.process_status;
-  stdout : string;
-  stderr : string;
-  data : Int64.t KindMap.t;
-}
+type execution = private
+  { process_status : Unix.process_status
+  ; stdout : string
+  ; stderr : string
+  ; data : Int64.t KindMap.t
+  }
 (** Type returned by [with_process] *)
 
 val with_process :
-  ?env:string list ->
-  ?timeout:int ->
-  ?stdout:string ->
-  ?stderr:string ->
-  string list ->
-  Attr.t list ->
-  [ `Ok of execution | `Timeout | `Exn of exn ]
+     ?env:string list
+  -> ?timeout:int
+  -> ?stdout:string
+  -> ?stderr:string
+  -> string list
+  -> Attr.t list
+  -> [ `Ok of execution | `Timeout | `Exn of exn ]
 (** [with_process ?env ?timeout ?stdout ?stderr cmd attrs] is the result of the
     execution of the program described by [cmd]. This can either be a successful
     execution, or an error. *)

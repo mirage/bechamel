@@ -1,7 +1,6 @@
 external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
 
 let always x _ = x
-let ( <.> ) f g x = f (g x)
 let empty_array = [||]
 
 let runnable_with_resources f vs i =
@@ -31,13 +30,12 @@ let record measure =
 
 let stabilize_garbage_collector () =
   let rec go fail last_heap_live_words =
-    if fail <= 0
-    then
-      failwith "Unable to stabilize the number of live words in the major heap" ;
-    Gc.compact () ;
+    if fail <= 0 then
+      failwith "Unable to stabilize the number of live words in the major heap";
+    Gc.compact ();
     let stat = Gc.stat () in
-    if stat.Gc.live_words <> last_heap_live_words
-    then go (fail - 1) stat.Gc.live_words
+    if stat.Gc.live_words <> last_heap_live_words then
+      go (fail - 1) stat.Gc.live_words
   in
   go 10 0
 
@@ -48,32 +46,32 @@ let exceeded_allowed_time allowed_time_span t =
 
 type sampling = [ `Linear of int | `Geometric of float ]
 
-type stats = {
-  start : int;
-  sampling : sampling;
-  stabilize : bool;
-  quota : Time.span;
-  limit : int;
-  instances : string list;
-  samples : int;
-  time : Time.span;
-}
+type stats =
+  { start : int
+  ; sampling : sampling
+  ; stabilize : bool
+  ; quota : Time.span
+  ; limit : int
+  ; instances : string list
+  ; samples : int
+  ; time : Time.span
+  }
 
-type configuration = {
-  start : int;
-  sampling : sampling;
-  stabilize : bool;
-  compaction : bool;
-  quota : Time.span;
-  kde : int option;
-  limit : int;
-}
+type configuration =
+  { start : int
+  ; sampling : sampling
+  ; stabilize : bool
+  ; compaction : bool
+  ; quota : Time.span
+  ; kde : int option
+  ; limit : int
+  }
 
-type t = {
-  stats : stats;
-  lr : Measurement_raw.t array;
-  kde : Measurement_raw.t array option;
-}
+type t =
+  { stats : stats
+  ; lr : Measurement_raw.t array
+  ; kde : Measurement_raw.t array option
+  }
 
 let cfg ?(limit = 3000) ?(quota = Time.second 1.) ?(kde = None)
     ?(sampling = `Geometric 1.01) ?(stabilize = true) ?(compaction = true)
@@ -88,16 +86,16 @@ let run cfg measures test : t =
   let (allocate0 : unit -> _), free0, (allocate1 : int -> _), free1 =
     match kind with
     | Test.Uniq ->
-        ( Test.Uniq.prj <.> allocate,
-          free <.> Test.Uniq.inj,
-          always empty_array,
-          ignore )
+        ( (fun () -> Test.Uniq.prj (allocate ()))
+        , (fun v -> free (Test.Uniq.inj v))
+        , always empty_array
+        , ignore )
     | Test.Multiple ->
-        let[@warning "-8"] [| v |] = Test.Multiple.prj (allocate 1) in
-        ( always v,
-          (fun v -> free (Test.Multiple.inj [| v |])),
-          Test.Multiple.prj <.> allocate,
-          free <.> Test.Multiple.inj )
+        let v = unsafe_get (Test.Multiple.prj (allocate 1)) 1 in
+        ( always v
+        , (fun v -> free (Test.Multiple.inj [| v |]))
+        , (fun n -> Test.Multiple.prj (allocate n))
+        , fun v -> free (Test.Multiple.inj v) )
   in
   let resource = allocate0 () in
 
@@ -107,10 +105,10 @@ let run cfg measures test : t =
   let m0 = Array.create_float length in
   let m1 = Array.create_float length in
 
-  Array.iter Measure.load measures ;
+  Array.iter Measure.load measures;
   let records = Array.init length (fun i -> record measures.(i)) in
 
-  stabilize_garbage_collector () ;
+  stabilize_garbage_collector ();
 
   let init_time = Time.of_uint64_ns (Monotonic_clock.now ()) in
 
@@ -121,30 +119,30 @@ let run cfg measures test : t =
     let current_idx = !idx in
     let resources = allocate1 !run in
 
-    if cfg.stabilize then stabilize_garbage_collector () ;
+    if cfg.stabilize then stabilize_garbage_collector ();
 
-    if not cfg.compaction
-    then Gc.set { (Gc.get ()) with Gc.max_overhead = 1_000_000 } ;
+    if not cfg.compaction then
+      Gc.set { (Gc.get ()) with Gc.max_overhead = 1_000_000 };
 
     (* The returned measurements are a difference betwen a measurement [m0]
        taken before running the tested function [fn] and a measurement taken
        after [m1]. *)
     for i = 0 to length - 1 do
       m0.(i) <- records.(i) ()
-    done ;
+    done;
 
-    runnable kind fn resource resources current_run ;
+    runnable kind fn resource resources current_run;
 
     for i = 0 to length - 1 do
       m1.(i) <- records.(i) ()
-    done ;
+    done;
 
-    free1 resources ;
+    free1 resources;
 
-    m.(current_idx * (length + 1)) <- float_of_int current_run ;
+    m.(current_idx * (length + 1)) <- float_of_int current_run;
     for i = 1 to length do
       m.((current_idx * (length + 1)) + i) <- m1.(i - 1) -. m0.(i - 1)
-    done ;
+    done;
 
     let next =
       match cfg.sampling with
@@ -153,15 +151,14 @@ let run cfg measures test : t =
           let next_geometric =
             int_of_float (float_of_int current_run *. scale)
           in
-          if next_geometric >= current_run + 1
-          then next_geometric
+          if next_geometric >= current_run + 1 then next_geometric
           else current_run + 1
     in
 
-    total_run := !total_run + !run ;
-    run := next ;
+    total_run := !total_run + !run;
+    run := next;
     incr idx
-  done ;
+  done;
 
   let samples = !idx in
   let labels = Array.map Measure.label measures in
@@ -187,25 +184,26 @@ let run cfg measures test : t =
           && !current_idx < kde_limit
         do
           let resources = allocate1 1 in
+          let resource = unsafe_get resources 0 in
 
           for i = 0 to length - 1 do
             m0.(i) <- records.(i) ()
-          done ;
+          done;
 
-          ignore (Sys.opaque_identity (fn (unsafe_get resources 0))) ;
+          ignore (Sys.opaque_identity (fn resource));
 
           for i = 0 to length - 1 do
             m1.(i) <- records.(i) ()
-          done ;
+          done;
 
-          free1 resources ;
+          free1 resources;
 
           for i = 0 to length - 1 do
             mkde.((!current_idx * length) + i) <- m1.(i) -. m0.(i)
-          done ;
+          done;
 
           incr current_idx
-        done ;
+        done;
         let kde_raw idx =
           let measures = Array.sub mkde (idx * length) length in
           Measurement_raw.make ~measures ~labels 1.
@@ -215,19 +213,18 @@ let run cfg measures test : t =
   in
 
   let final_time = Time.of_uint64_ns (Monotonic_clock.now ()) in
-  free0 resource ;
-  Array.iter Measure.unload measures ;
+  free0 resource;
+  Array.iter Measure.unload measures;
 
   let stats =
-    {
-      start = cfg.start;
-      sampling = cfg.sampling;
-      stabilize = cfg.stabilize;
-      quota = cfg.quota;
-      limit = cfg.limit;
-      instances = Array.to_list labels;
-      samples;
-      time = Time.span init_time final_time;
+    { start = cfg.start
+    ; sampling = cfg.sampling
+    ; stabilize = cfg.stabilize
+    ; quota = cfg.quota
+    ; limit = cfg.limit
+    ; instances = Array.to_list labels
+    ; samples
+    ; time = Time.span init_time final_time
     }
   in
 
@@ -240,5 +237,5 @@ let all cfg measures test =
   for i = 0 to Array.length tests - 1 do
     let results = run cfg measures tests.(i) in
     Hashtbl.add tbl (Test.Elt.name tests.(i)) results
-  done ;
+  done;
   tbl

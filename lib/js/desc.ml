@@ -35,14 +35,14 @@ let witness : t Json_encoding.encoding =
   conv
     (fun (t : t) ->
       let open Benchmark in
-      ( t.start,
-        t.sampling,
-        t.stabilize,
-        t.quota,
-        t.limit,
-        t.instances,
-        t.samples,
-        t.time ))
+      ( t.start
+      , t.sampling
+      , t.stabilize
+      , t.quota
+      , t.limit
+      , t.instances
+      , t.samples
+      , t.time ))
     (fun (start, sampling, stabilize, quota, limit, instances, samples, time) ->
       let open Benchmark in
       { start; sampling; stabilize; quota; limit; instances; samples; time })

@@ -35,12 +35,12 @@ module OLS : sig
   type t
 
   val ols :
-    ?bootstrap:int ->
-    ?r_square:bool ->
-    responder:string ->
-    predictors:string array ->
-    Measurement_raw.t array ->
-    t
+       ?bootstrap:int
+    -> ?r_square:bool
+    -> responder:string
+    -> predictors:string array
+    -> Measurement_raw.t array
+    -> t
 
   val pp : t Fmt.t
   val predictors : t -> string list
@@ -53,11 +53,11 @@ module RANSAC : sig
   type t
 
   val ransac :
-    ?filter_outliers:bool ->
-    predictor:string ->
-    responder:string ->
-    Measurement_raw.t array ->
-    t
+       ?filter_outliers:bool
+    -> predictor:string
+    -> responder:string
+    -> Measurement_raw.t array
+    -> t
 
   val pp : t Fmt.t
   val responder : t -> string
@@ -86,13 +86,13 @@ val one : 'a t -> Measure.witness -> Benchmark.t -> 'a
     {i run}-[time] (or execution time) value. *)
 
 val all :
-  'a t ->
-  Measure.witness ->
-  (string, Benchmark.t) Hashtbl.t ->
-  (string, 'a) Hashtbl.t
+     'a t
+  -> Measure.witness
+  -> (string, Benchmark.t) Hashtbl.t
+  -> (string, 'a) Hashtbl.t
 
 val merge :
-  'a t ->
-  Measure.witness list ->
-  (string, 'a) Hashtbl.t list ->
-  (string, (string, 'a) Hashtbl.t) Hashtbl.t
+     'a t
+  -> Measure.witness list
+  -> (string, 'a) Hashtbl.t list
+  -> (string, (string, 'a) Hashtbl.t) Hashtbl.t

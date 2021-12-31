@@ -16,12 +16,12 @@ module Multiple : sig
 end
 
 type packed = private
-  | V : {
-      fn : [ `Init ] -> 'a -> 'b;
-      kind : ('a, 'v, 't) kind;
-      allocate : 'v -> ('a, 't) app;
-      free : ('a, 't) app -> unit;
-    }
+  | V :
+      { fn : [ `Init ] -> 'a -> 'b
+      ; kind : ('a, 'v, 't) kind
+      ; allocate : 'v -> ('a, 't) app
+      ; free : ('a, 't) app -> unit
+      }
       -> packed
 
 and ('a, 'v, 'k) kind = private
@@ -59,19 +59,19 @@ val make : name:string -> (unit -> 'a) Staged.t -> t
     ]} *)
 
 val make_with_resource :
-  name:string ->
-  ('a, 'f, 'g) kind ->
-  allocate:(unit -> 'a) ->
-  free:('a -> unit) ->
-  ('a -> 'b) Staged.t ->
-  t
+     name:string
+  -> ('a, 'f, 'g) kind
+  -> allocate:(unit -> 'a)
+  -> free:('a -> unit)
+  -> ('a -> 'b) Staged.t
+  -> t
 
 val make_indexed :
-  name:string ->
-  ?fmt:fmt_indexed ->
-  args:int list ->
-  (int -> (unit -> 'a) Staged.t) ->
-  t
+     name:string
+  -> ?fmt:fmt_indexed
+  -> args:int list
+  -> (int -> (unit -> 'a) Staged.t)
+  -> t
 (** [make_indexed ~name ~fmt ~args fn] is naming benchmarks indexed by an
     argument (by [args]). Name of each benchmark is [Fmt.strf fmt name arg]
     (default to ["%s:%d"]).
@@ -90,14 +90,14 @@ val make_indexed :
     with differents arguments (indexed by the given [int]). *)
 
 val make_indexed_with_resource :
-  name:string ->
-  ?fmt:fmt_indexed ->
-  args:int list ->
-  ('a, 'f, 'g) kind ->
-  allocate:(int -> 'a) ->
-  free:('a -> unit) ->
-  (int -> ('a -> 'b) Staged.t) ->
-  t
+     name:string
+  -> ?fmt:fmt_indexed
+  -> args:int list
+  -> ('a, 'f, 'g) kind
+  -> allocate:(int -> 'a)
+  -> free:('a -> unit)
+  -> (int -> ('a -> 'b) Staged.t)
+  -> t
 
 val make_grouped : name:string -> ?fmt:fmt_grouped -> t list -> t
 (** [make_grouped ~name ~fmt tests] is naming benchmarks. Name of each benchmark

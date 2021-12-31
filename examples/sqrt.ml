@@ -10,17 +10,17 @@ let normal n =
   for i = 0 to (m / 2) - 1 do
     let x = ref 0. and y = ref 0. and rsq = ref 0. in
     while
-      x := (Random.float random_max /. random_max *. 2.0) -. 1. ;
-      y := (Random.float random_max /. random_max *. 2.0) -. 1. ;
-      rsq := (!x *. !x) +. (!y *. !y) ;
+      x := (Random.float random_max /. random_max *. 2.0) -. 1.;
+      y := (Random.float random_max /. random_max *. 2.0) -. 1.;
+      rsq := (!x *. !x) +. (!y *. !y);
       !rsq >= 1. || !rsq = 0.
     do
       ()
-    done ;
+    done;
     let f = sqrt (-2.0 *. log !rsq /. !rsq) in
-    values.(i * 2) <- !x *. f ;
+    values.(i * 2) <- !x *. f;
     values.((i * 2) + 1) <- !y *. f
-  done ;
+  done;
   Array.map (( *. ) random_max) values
 
 let sqrt n =

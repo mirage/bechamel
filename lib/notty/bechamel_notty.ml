@@ -10,8 +10,8 @@ module Unit = struct
   let units = Hashtbl.create 16
 
   let add instance unit =
-    if String.length unit > 5
-    then Fmt.invalid_arg "A unit shoud be smaller than 5 bytes: %s" unit ;
+    if String.length unit > 5 then
+      Fmt.invalid_arg "A unit shoud be smaller than 5 bytes: %s" unit;
     Hashtbl.add units (Measure.label instance) unit
 
   let label label = I.string A.empty label
@@ -44,22 +44,17 @@ let max_length_of_values = 23
 
 let ols_value : predictor:string -> Analyze.OLS.t -> image =
  fun ~predictor v ->
-  if not (List.mem predictor (Analyze.OLS.predictors v))
-  then
+  if not (List.mem predictor (Analyze.OLS.predictors v)) then
     Fmt.invalid_arg "Predictor %s was not computed in %a." predictor
-      Analyze.OLS.pp v ;
+      Analyze.OLS.pp v;
 
   let attrs =
     match Analyze.OLS.r_square v with
     | Some r_square ->
-        if r_square <= 0.5
-        then A.(bg red ++ st bold)
-        else if r_square <= 0.75
-        then A.(fg red)
-        else if r_square <= 0.90
-        then A.(fg yellow)
-        else if r_square <= 0.98
-        then A.(fg green)
+        if r_square <= 0.5 then A.(bg red ++ st bold)
+        else if r_square <= 0.75 then A.(fg red)
+        else if r_square <= 0.90 then A.(fg yellow)
+        else if r_square <= 0.98 then A.(fg green)
         else A.(bg green ++ st bold)
     | None -> A.(fg white)
   in
@@ -85,14 +80,10 @@ let ransac_value : Analyze.RANSAC.t -> image =
  fun v ->
   let attrs =
     let error = Analyze.RANSAC.error v in
-    if error <= 0.5
-    then A.(bg red ++ st bold)
-    else if error <= 0.75
-    then A.(fg red)
-    else if error <= 0.90
-    then A.(fg yellow)
-    else if error <= 0.98
-    then A.(fg green)
+    if error <= 0.5 then A.(bg red ++ st bold)
+    else if error <= 0.75 then A.(fg red)
+    else if error <= 0.90 then A.(fg yellow)
+    else if error <= 0.98 then A.(fg green)
     else A.(bg green ++ st bold)
   in
   let responder = Analyze.RANSAC.responder v in
@@ -125,16 +116,16 @@ let hashtbl_choose hashtbl =
   let k = ref None in
   let v = ref None in
 
-  if Hashtbl.length hashtbl = 0
-  then Fmt.invalid_arg "hashtbl_choose: empty hashtbl" ;
+  if Hashtbl.length hashtbl = 0 then
+    Fmt.invalid_arg "hashtbl_choose: empty hashtbl";
 
   try
     Hashtbl.iter
       (fun k' v' ->
-        k := Some k' ;
-        v := Some v' ;
+        k := Some k';
+        v := Some v';
         raise Break)
-      hashtbl ;
+      hashtbl;
     assert false
   with Break -> (
     match (!k, !v) with Some k, Some v -> (k, v) | _, _ -> assert false)
@@ -148,33 +139,29 @@ module One = struct
     in
 
     grid
-      [
-        [
-          corner_tl 1 1;
-          line (max_length_of_names + 4) 1;
-          break_t 1 1;
-          line (rect.w - 2 - 1 - (max_length_of_names + 4)) 1;
-          corner_tr 1 1;
-        ];
-        [
-          sideline 1 1;
-          I.(string A.(st italic) "name");
-          I.void max_length_of_names 1;
-          sideline 1 1;
-          I.(string A.empty responder |> hpad 2 0);
-          I.void
+      [ [ corner_tl 1 1
+        ; line (max_length_of_names + 4) 1
+        ; break_t 1 1
+        ; line (rect.w - 2 - 1 - (max_length_of_names + 4)) 1
+        ; corner_tr 1 1
+        ]
+      ; [ sideline 1 1
+        ; I.(string A.(st italic) "name")
+        ; I.void max_length_of_names 1
+        ; sideline 1 1
+        ; I.(string A.empty responder |> hpad 2 0)
+        ; I.void
             (rect.w
             - (max_length_of_names + 4 + 2 + 2 + 1 + String.length responder))
-            1;
-          sideline 1 1;
-        ];
-        [
-          break_l 1 1;
-          line (max_length_of_names + 4) 1;
-          cross 1 1;
-          line (rect.w - 2 - 1 - (max_length_of_names + 4)) 1;
-          break_r 1 1;
-        ];
+            1
+        ; sideline 1 1
+        ]
+      ; [ break_l 1 1
+        ; line (max_length_of_names + 4) 1
+        ; cross 1 1
+        ; line (rect.w - 2 - 1 - (max_length_of_names + 4)) 1
+        ; break_r 1 1
+        ]
       ]
 
   let image_of_field ~max_length_of_names ~rect ~predictor img (name, v) =
@@ -183,18 +170,16 @@ module One = struct
 
     let field =
       grid
-        [
-          [
-            sideline 1 1;
-            I.(string A.empty name |> hpad 2 0);
-            I.void (max_length_of_names + 4 - 2 - String.length name) 1;
-            sideline 1 1;
-            I.(
+        [ [ sideline 1 1
+          ; I.(string A.empty name |> hpad 2 0)
+          ; I.void (max_length_of_names + 4 - 2 - String.length name) 1
+          ; sideline 1 1
+          ; I.(
               hsnap ~align:`Right
                 (rect.w - 2 - 1 - (max_length_of_names + 4))
-                value);
-            sideline 1 1;
-          ];
+                value)
+          ; sideline 1 1
+          ]
         ]
     in
     img <-> field
@@ -222,52 +207,47 @@ module One = struct
     in
 
     grid
-      [
-        [
-          break_l 1 1;
-          line (max_length_of_names + 4) 1;
-          cross 1 1;
-          line (rect.w - 2 - 1 - (max_length_of_names + 4)) 1;
-          break_r 1 1;
-        ];
-        [
-          sideline 1 1;
-          I.(string A.(st italic) "best");
-          I.void max_length_of_names 1;
-          sideline 1 1;
-          I.(string A.empty best |> hpad 2 0);
-          I.void
+      [ [ break_l 1 1
+        ; line (max_length_of_names + 4) 1
+        ; cross 1 1
+        ; line (rect.w - 2 - 1 - (max_length_of_names + 4)) 1
+        ; break_r 1 1
+        ]
+      ; [ sideline 1 1
+        ; I.(string A.(st italic) "best")
+        ; I.void max_length_of_names 1
+        ; sideline 1 1
+        ; I.(string A.empty best |> hpad 2 0)
+        ; I.void
             (rect.w - (max_length_of_names + 4 + 2 + 2 + 1 + String.length best))
-            1;
-          sideline 1 1;
-        ];
-        [
-          sideline 1 1;
-          I.(string A.(st italic) "worst");
-          I.void (max_length_of_names - 1) 1;
-          sideline 1 1;
-          I.(string A.empty worst |> hpad 2 0);
-          I.void
+            1
+        ; sideline 1 1
+        ]
+      ; [ sideline 1 1
+        ; I.(string A.(st italic) "worst")
+        ; I.void (max_length_of_names - 1) 1
+        ; sideline 1 1
+        ; I.(string A.empty worst |> hpad 2 0)
+        ; I.void
             (rect.w
             - (max_length_of_names + 4 + 2 + 2 + 1 + String.length worst))
-            1;
-          sideline 1 1;
-        ];
-        [
-          corner_bl 1 1;
-          line (max_length_of_names + 4) 1;
-          break_b 1 1;
-          line (rect.w - 2 - 1 - (max_length_of_names + 4)) 1;
-          corner_br 1 1;
-        ];
+            1
+        ; sideline 1 1
+        ]
+      ; [ corner_bl 1 1
+        ; line (max_length_of_names + 4) 1
+        ; break_b 1 1
+        ; line (rect.w - 2 - 1 - (max_length_of_names + 4)) 1
+        ; corner_br 1 1
+        ]
       ]
 
   let image_of_ols_result :
-      ?sort:(string -> string -> int) ->
-      rect:rect ->
-      predictor:string ->
-      Analyze.OLS.t result ->
-      image =
+         ?sort:(string -> string -> int)
+      -> rect:rect
+      -> predictor:string
+      -> Analyze.OLS.t result
+      -> image =
    fun ?(sort = String.compare) ~rect ~predictor result ->
     let tests = Hashtbl.fold (fun name v a -> (name, v) :: a) result [] in
     let tests = List.sort (fun (a, _) (b, _) -> sort a b) tests in
@@ -321,10 +301,9 @@ module Multiple = struct
       List.map
         (fun instance ->
           let rest = max_length_of_instances - String.length instance + 2 in
-          [
-            sideline 1 1;
-            I.(string A.empty instance |> I.hpad 2 0);
-            I.void rest 0;
+          [ sideline 1 1
+          ; I.(string A.empty instance |> I.hpad 2 0)
+          ; I.void rest 0
           ])
         instances
       |> List.concat
@@ -357,18 +336,16 @@ module Multiple = struct
     in
 
     let ll =
-      [
-        sideline 1 1;
-        I.(string A.empty name |> hpad 2 0);
-        I.void (max_length_of_names + 4 - 2 - String.length name) 1;
+      [ sideline 1 1
+      ; I.(string A.empty name |> hpad 2 0)
+      ; I.void (max_length_of_names + 4 - 2 - String.length name) 1
       ]
     in
     let cc =
       List.map
         (fun value ->
-          [
-            sideline 1 1;
-            I.(hsnap ~align:`Right (max_length_of_fields + 4)) value;
+          [ sideline 1 1
+          ; I.(hsnap ~align:`Right (max_length_of_fields + 4)) value
           ])
         values
       |> List.concat
@@ -379,11 +356,11 @@ module Multiple = struct
     img <-> I.hcat (ll @ cc @ rr)
 
   let image_of_ols_results :
-      ?sort:(string -> string -> int) ->
-      rect:rect ->
-      predictor:string ->
-      Analyze.OLS.t results ->
-      image =
+         ?sort:(string -> string -> int)
+      -> rect:rect
+      -> predictor:string
+      -> Analyze.OLS.t results
+      -> image =
    fun ?(sort = String.compare) ~rect ~predictor results ->
     let header = image_of_header ~rect results in
     let instances = Hashtbl.fold (fun k _ a -> k :: a) results [] in
