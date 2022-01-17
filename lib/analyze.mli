@@ -80,9 +80,10 @@ val ols : r_square:bool -> bootstrap:int -> predictors:string array -> OLS.t t
 val ransac : filter_outliers:bool -> predictor:string -> RANSAC.t t
 
 val one : 'a t -> Measure.witness -> Benchmark.t -> 'a
-(** [one analyze measure (stat, samples)] estimates the actual given [measures]
-    for one [predictors]. So, [one analyze time (stat, samples)] where [analyze]
-    is initialized with [run] {i predictor} wants to estimate actual
+(** [one analyze measure { Benchmark.stat; lr; kde; }] estimates the actual
+    given [measure] for one [predictors]. So,
+    [one analyze time { Benchmark.stat; lr; kde; }] where [analyze] is
+    initialized with [run] {i predictor} wants to estimate actual
     {i run}-[time] (or execution time) value. *)
 
 val all :
@@ -90,9 +91,14 @@ val all :
   -> Measure.witness
   -> (string, Benchmark.t) Hashtbl.t
   -> (string, 'a) Hashtbl.t
+(** [all analyze measure tbl] is an application of {!val:one} for all results
+    from the given [tbl]. *)
 
 val merge :
      'a t
   -> Measure.witness list
   -> (string, 'a) Hashtbl.t list
   -> (string, (string, 'a) Hashtbl.t) Hashtbl.t
+(** [merge witnesses tbls] returns a dictionary where the key is the {i label}
+    of a measure (from the given [witnesses]) and the value is the result of
+    this specific measure. *)

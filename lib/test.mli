@@ -65,6 +65,25 @@ val make_with_resource :
   -> free:('a -> unit)
   -> ('a -> 'b) Staged.t
   -> t
+(** [make_with_resource ~name k ~allocate ~free fn] is a naming benchmark
+    measuring [fn] with a pre-allocated resource ['v] (given by [allocate]).
+    It permits to measure [fn] which requires a resource allocated {b before}
+    the benchmark. Then, this resource can be free-ed {i via} the given [free]
+    function.
+
+    Depending on the [k] given, the resource can be allocated only one time or
+    per [run]:
+    - {!val:uniq}, the resource is allocated one ime before the benchmark and
+      used by [fn] for all runs. Then, it is free-ed at the end of the
+      benchmark.
+    - {!val:multiple}, the resource is allocated multiple times (depending on
+      how many times we want to {i run} [fn]) at the beginning of the benchmark
+      and [fn] is executed with a structurally different resource per [run].
+      Then, these resources are free-ed at the end of the benchmark.
+
+    {b NOTE}: the {!val:multiple} case can ask a huge allocation (for instance,
+    it can call 3000 times [allocate]). Be aware that such usage, depending on
+    what you allocate, can lead an [Out_of_memory] exception. *)
 
 val make_indexed :
      name:string
