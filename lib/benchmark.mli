@@ -4,14 +4,15 @@ type configuration
 (** Type of configuration. *)
 
 val cfg :
-  ?limit:int ->
-  ?quota:Time.span ->
-  ?kde:int option ->
-  ?sampling:sampling ->
-  ?stabilize:bool ->
-  ?start:int ->
-  unit ->
-  configuration
+     ?limit:int
+  -> ?quota:Time.span
+  -> ?kde:int option
+  -> ?sampling:sampling
+  -> ?stabilize:bool
+  -> ?compaction:bool
+  -> ?start:int
+  -> unit
+  -> configuration
 (** [cfg ()] returns a configuration needed to run a {i benchmark}. It accepts
     several optional arguments:
 
@@ -27,16 +28,16 @@ val cfg :
       before each run (default to [true]).
     - [start] is the first value of the [run] metric (default to [1]). *)
 
-type stats = {
-  start : int;
-  sampling : sampling;
-  stabilize : bool;
-  quota : Time.span;
-  limit : int;
-  instances : string list;
-  samples : int;
-  time : Time.span;
-}
+type stats =
+  { start : int
+  ; sampling : sampling
+  ; stabilize : bool
+  ; quota : Time.span
+  ; limit : int
+  ; instances : string list
+  ; samples : int
+  ; time : Time.span
+  }
 (** Type of statistics of one benchmark. It contains which {!configuration} the
     benchmark used and:
 
@@ -46,11 +47,11 @@ type stats = {
     It's useful to introspect which limit was reached (the time or the limit of
     runs). *)
 
-type t = {
-  stats : stats;
-  lr : Measurement_raw.t array;
-  kde : Measurement_raw.t array option;
-}
+type t =
+  { stats : stats
+  ; lr : Measurement_raw.t array
+  ; kde : Measurement_raw.t array option
+  }
 (** Results of one benchmark:
 
     - [stats] contains all the information about the benchmarks as described

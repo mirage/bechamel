@@ -146,13 +146,13 @@ let flag_to_enum = function
 type t = { fd : Unix.file_descr; kind : Attr.Kind.t }
 
 external perf_event_open :
-  kind:int ->
-  attr_flags:int ->
-  pid:int ->
-  cpu:int ->
-  group_fd:int ->
-  flags:int ->
-  Unix.file_descr = "mperf_event_open_byte" "mperf_event_open_native"
+     kind:int
+  -> attr_flags:int
+  -> pid:int
+  -> cpu:int
+  -> group_fd:int
+  -> flags:int
+  -> Unix.file_descr = "mperf_event_open_byte" "mperf_event_open_native"
 
 external perf_event_ioc_enable : Unix.file_descr -> unit
   = "mperf_event_ioc_enable"
@@ -186,11 +186,10 @@ let make ?(pid = 0) ?(cpu = -1) ?group ?(flags = []) attr =
   in
   let kind_enum = Attr.(Kind.(to_enum attr.kind)) in
   Attr.
-    {
-      fd =
+    { fd =
         perf_event_open ~kind:kind_enum ~attr_flags ~pid ~cpu ~group_fd:group
-          ~flags;
-      kind = attr.kind;
+          ~flags
+    ; kind = attr.kind
     }
 
 let kind c = c.kind
@@ -204,7 +203,7 @@ let get_int64 buf off =
 let read c =
   let buf = Bytes.create 8 in
   let nb_read = Unix.read c.fd buf 0 8 in
-  assert (nb_read = 8) ;
+  assert (nb_read = 8);
   get_int64 buf 0
 
 let reset c = perf_event_ioc_reset c.fd
@@ -212,12 +211,12 @@ let enable c = perf_event_ioc_enable c.fd
 let disable c = perf_event_ioc_disable c.fd
 let close c = Unix.close c.fd
 
-type execution = {
-  process_status : Unix.process_status;
-  stdout : string;
-  stderr : string;
-  data : Int64.t KindMap.t;
-}
+type execution =
+  { process_status : Unix.process_status
+  ; stdout : string
+  ; stderr : string
+  ; data : Int64.t KindMap.t
+  }
 
 let string_of_ic ic = really_input_string ic @@ in_channel_length ic
 
@@ -225,10 +224,10 @@ let string_of_file filename =
   let ic = open_in filename in
   try
     let res = string_of_ic ic in
-    close_in ic ;
+    close_in ic;
     res
   with exn ->
-    close_in ic ;
+    close_in ic;
     raise exn
 
 let with_process_exn ?env ?timeout ?stdout ?stderr cmd attrs =
@@ -236,13 +235,12 @@ let with_process_exn ?env ?timeout ?stdout ?stderr cmd attrs =
     List.map
       Attr.(
         fun a ->
-          {
-            flags =
+          { flags =
               List.fold_left
                 (fun a f -> Attr.FSet.add f a)
                 a.flags
-                [ Disabled; Inherit; Enable_on_exec ];
-            kind = a.kind;
+                [ Disabled; Inherit; Enable_on_exec ]
+          ; kind = a.kind
           })
       attrs
   in
@@ -269,10 +267,10 @@ let with_process_exn ?env ?timeout ?stdout ?stderr cmd attrs =
       Unix.(
         handle_unix_error
           (fun () ->
-            dup2 tmp_stdout stdout ;
-            close tmp_stdout ;
-            dup2 tmp_stderr stderr ;
-            close tmp_stderr ;
+            dup2 tmp_stdout stdout;
+            close tmp_stdout;
+            dup2 tmp_stderr stderr;
+            close tmp_stderr;
             match env with
             | None -> execvp (List.hd cmd) (Array.of_list cmd)
             | Some env ->
@@ -284,27 +282,26 @@ let with_process_exn ?env ?timeout ?stdout ?stderr cmd attrs =
          handles do nothing, but this will make waitpid fail with
          EINTR, unblocking the program. *)
       let (_ : int) = match timeout with None -> 0 | Some t -> Unix.alarm t in
-      Sys.(set_signal sigalrm (Signal_handle (fun _ -> ()))) ;
+      Sys.(set_signal sigalrm (Signal_handle (fun _ -> ())));
       let _, process_status = Unix.waitpid [] n in
-      List.iter disable counters ;
+      List.iter disable counters;
       Unix.(
-        close tmp_stdout ;
-        close tmp_stderr) ;
+        close tmp_stdout;
+        close tmp_stderr);
       let res =
-        {
-          process_status;
-          stdout = string_of_file tmp_stdout_name;
-          stderr = string_of_file tmp_stderr_name;
-          data =
+        { process_status
+        ; stdout = string_of_file tmp_stdout_name
+        ; stderr = string_of_file tmp_stderr_name
+        ; data =
             List.fold_left
               (fun a c -> KindMap.add c.kind (read c) a)
-              KindMap.empty counters;
+              KindMap.empty counters
         }
       in
-      List.iter close counters ;
+      List.iter close counters;
       (* Remove stdout/stderr files iff they were left unspecified. *)
-      (match stdout with None -> Unix.unlink tmp_stdout_name | _ -> ()) ;
-      (match stderr with None -> Unix.unlink tmp_stderr_name | _ -> ()) ;
+      (match stdout with None -> Unix.unlink tmp_stdout_name | _ -> ());
+      (match stderr with None -> Unix.unlink tmp_stderr_name | _ -> ());
       res
 
 let with_process ?env ?timeout ?stdout ?stderr cmd attrs =

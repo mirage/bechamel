@@ -58,18 +58,18 @@ let print_js_script () =
   let head, tail =
     cut ~error_msg:"Separator not found in js file" js separator
   in
-  print_string head ;
-  print_string "contents = " ;
-  print_endline first_line ;
-  stdin_to_stdout () ;
+  print_string head;
+  print_string "contents = ";
+  print_endline first_line;
+  stdin_to_stdout ();
   print_string tail
 
 let () =
   let html = Html_file.data in
   let css = Css_file.data in
   let html1, html2, html3 = cut_html html in
-  print_string html1 ;
-  print_string css ;
-  print_string html2 ;
-  print_js_script () ;
+  print_string html1;
+  print_string css;
+  print_string html2;
+  print_js_script ();
   print_string html3

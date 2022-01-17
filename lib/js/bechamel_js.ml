@@ -1,10 +1,10 @@
 open Bechamel
 
-type t = {
-  x_label : string;
-  y_label : string;
-  series : (string, Desc.t * Dataset.t * KDE.t option * OLS.t) Hashtbl.t;
-}
+type t =
+  { x_label : string
+  ; y_label : string
+  ; series : (string, Desc.t * Dataset.t * KDE.t option * OLS.t) Hashtbl.t
+  }
 
 let label_witness : string Json_encoding.encoding = Json_encoding.string
 
@@ -29,21 +29,21 @@ let witness ~compare : t Json_encoding.encoding =
             (k, desc, dataset, kde, ols) :: a)
           t.series []
       in
-      ( t.x_label,
-        t.y_label,
-        List.sort (fun (k0, _, _, _, _) (k1, _, _, _, _) -> compare k0 k1) l ))
+      ( t.x_label
+      , t.y_label
+      , List.sort (fun (k0, _, _, _, _) (k1, _, _, _, _) -> compare k0 k1) l ))
     (fun (x_label, y_label, l) ->
       let series = Hashtbl.create (List.length l) in
       List.iter
         (fun (k, desc, dataset, kde, ols) ->
           Hashtbl.add series k (desc, dataset, kde, ols))
-        l ;
+        l;
       { x_label; y_label; series })
     (obj3 x_label y_label series)
 
 let of_ols_results ~x_label ~y_label ols_results raws =
-  if not (Hashtbl.mem ols_results y_label)
-  then Rresult.R.error_msgf "y:%s does not exist in OLS results" y_label
+  if not (Hashtbl.mem ols_results y_label) then
+    Rresult.R.error_msgf "y:%s does not exist in OLS results" y_label
   else
     let results = Hashtbl.find ols_results y_label in
     let series = Hashtbl.create (Hashtbl.length results) in
@@ -65,7 +65,7 @@ let of_ols_results ~x_label ~y_label ols_results raws =
           | Ok (stats, raws, raws_kde, ols) ->
               Hashtbl.add series serie (stats, raws, raws_kde, ols)
           | Error _ as err -> Rresult.R.error_msg_to_invalid_arg err)
-        results ;
+        results;
       Ok { x_label; y_label; series }
     with Invalid_argument err -> Rresult.R.error_msg err
 
@@ -113,13 +113,13 @@ type ols_results = (string, (string, Analyze.OLS.t) Hashtbl.t) Hashtbl.t
 
 let emit :
     type a.
-    dst:a dst ->
-    a ->
-    ?compare:(string -> string -> int) ->
-    x_label:string ->
-    y_label:string ->
-    ols_results * raws ->
-    unit or_error =
+       dst:a dst
+    -> a
+    -> ?compare:(string -> string -> int)
+    -> x_label:string
+    -> y_label:string
+    -> ols_results * raws
+    -> unit or_error =
  fun ~dst a ?compare:(compare_label = String.compare) ~x_label ~y_label
      (ols_results, raw_results) ->
   let to_dst : type a. a dst -> Jsonm.dst = function
@@ -149,13 +149,13 @@ let emit :
                 let buf', off', len' =
                   transmit (!buf, !off, !len - Jsonm.Manual.dst_rem encoder)
                 in
-                buf := buf' ;
-                off := off' ;
-                len := len' ;
+                buf := buf';
+                off := off';
+                len := len';
                 Jsonm.Manual.dst encoder buf' off' len'
             | Buffer _ -> ()
             | Channel _ -> ()))
-      flat ;
+      flat;
 
     let rec go : type a. a dst -> a -> unit or_error =
      fun dst a ->
@@ -167,10 +167,10 @@ let emit :
           let buf', off', len' =
             transmit (!buf, !off, !len - Jsonm.Manual.dst_rem encoder)
           in
-          buf := buf' ;
-          off := off' ;
-          len := len' ;
-          Jsonm.Manual.dst encoder buf' off' len' ;
+          buf := buf';
+          off := off';
+          len := len';
+          Jsonm.Manual.dst encoder buf' off' len';
           go dst a
       (* XXX(dinosaure): [Jsonm] explains that these cases never occur. *)
       | `Partial, Buffer _ -> assert false

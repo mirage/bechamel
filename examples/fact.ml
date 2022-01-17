@@ -7,9 +7,9 @@ let imp_fact x =
   let y = ref 0 in
   let r = ref 1 in
   while !y < x do
-    y := !y + 1 ;
+    y := !y + 1;
     r := !r * !y
-  done ;
+  done;
   !r
 
 let rec fun_fact x = if x = 0 then 1 else x * fun_fact (x - 1)
@@ -22,17 +22,17 @@ let normal n =
   for i = 0 to (m / 2) - 1 do
     let x = ref 0. and y = ref 0. and rsq = ref 0. in
     while
-      x := (Random.float random_max /. random_max *. 2.0) -. 1. ;
-      y := (Random.float random_max /. random_max *. 2.0) -. 1. ;
-      rsq := (!x *. !x) +. (!y *. !y) ;
+      x := (Random.float random_max /. random_max *. 2.0) -. 1.;
+      y := (Random.float random_max /. random_max *. 2.0) -. 1.;
+      rsq := (!x *. !x) +. (!y *. !y);
       !rsq >= 1. || !rsq = 0.
     do
       ()
-    done ;
+    done;
     let f = sqrt (-2.0 *. log !rsq /. !rsq) in
-    values.(i * 2) <- !x *. f ;
+    values.(i * 2) <- !x *. f;
     values.((i * 2) + 1) <- !y *. f
-  done ;
+  done;
   Array.map (Float.to_int <.> ( *. ) random_max) values
 
 let imp_fact n =
@@ -59,7 +59,8 @@ let benchmark () =
     Instance.[ minor_allocated; major_allocated; monotonic_clock ]
   in
   let cfg =
-    Benchmark.cfg ~limit:2000 ~quota:(Time.second 0.5) ~kde:(Some 1000) ()
+    Benchmark.cfg ~limit:2000 ~stabilize:true ~quota:(Time.second 0.5)
+      ~kde:(Some 1000) ()
   in
   let raw_results =
     Benchmark.all cfg instances
@@ -73,8 +74,8 @@ let benchmark () =
 
 let compare k0 k1 =
   let a = ref 0 and b = ref 0 in
-  Scanf.sscanf k0 "%s %s %d" (fun _ _ a' -> a := a') ;
-  Scanf.sscanf k1 "%s %s %d" (fun _ _ b' -> b := b') ;
+  Scanf.sscanf k0 "%s %s %d" (fun _ _ a' -> a := a');
+  Scanf.sscanf k1 "%s %s %d" (fun _ _ b' -> b := b');
   !a - !b
 
 let nothing _ = Ok ()
