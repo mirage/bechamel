@@ -22,5 +22,5 @@ depends: [
   "dune"       {>= "2.0.0"}
   "bechamel"   {= version}
   "notty"
-  "fmt"
+  "fmt"        {>= "0.9.0"}
 ]
