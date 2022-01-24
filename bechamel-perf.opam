@@ -2,17 +2,16 @@ opam-version: "2.0"
 name:         "bechamel-perf"
 maintainer:   "Romain Calascibetta <romain.calascibetta@gmail.com>"
 authors:      "Romain Calascibetta <romain.calascibetta@gmail.com>"
-homepage:     "https://github.com/dinosaure/bechamel"
-bug-reports:  "https://github.com/dinosaure/bechamel/issues"
-dev-repo:     "git+https://github.com/dinosaure/bechamel.git"
-doc:          "https://dinosaure.github.io/bechamel/"
+homepage:     "https://github.com/mirage/bechamel"
+bug-reports:  "https://github.com/mirage/bechamel/issues"
+dev-repo:     "git+https://github.com/mirage/bechamel.git"
+doc:          "https://mirage.github.io/bechamel/"
 license:      "MIT"
 synopsis:     "Linux perf's metrics for bechamel"
 description: """A simple layer on Linux perf's metrics for
 bechamel to record and analyze them."""
 
 build: [
-  [ "dune" "subst" ] {pinned}
   [ "dune" "build" "-p" name "-j" jobs ]
   [ "dune" "runtest" "-p" name "-j" jobs ] {with-test}
 ]
@@ -22,6 +21,6 @@ depends: [
   "dune"       {>= "2.0.0"}
   "mperf"
   "bechamel"   {= version}
-  "fmt"
+  "fmt"        {>= "0.9.0"}
   "base-unix"
 ]

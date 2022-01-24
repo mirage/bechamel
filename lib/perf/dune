@@ -1,5 +1,4 @@
 (library
- (optional)
  (name bechamel_perf)
  (public_name bechamel-perf)
  (libraries mperf bechamel))

@@ -2,17 +2,16 @@ opam-version: "2.0"
 name:         "bechamel-js"
 maintainer:   "Romain Calascibetta <romain.calascibetta@gmail.com>"
 authors:      "Romain Calascibetta <romain.calascibetta@gmail.com>"
-homepage:     "https://github.com/dinosaure/bechamel"
-bug-reports:  "https://github.com/dinosaure/bechamel/issues"
-dev-repo:     "git+https://github.com/dinosaure/bechamel.git"
-doc:          "https://dinosaure.github.io/bechamel/"
+homepage:     "https://github.com/mirage/bechamel"
+bug-reports:  "https://github.com/mirage/bechamel/issues"
+dev-repo:     "git+https://github.com/mirage/bechamel.git"
+doc:          "https://mirage.github.io/bechamel/"
 license:      "MIT"
 synopsis:     "HTML generator for bechamel's output"
 description: """A simple tool to generate a standalone HTML
 page which shows results from bechamel's benchmarks."""
 
 build: [
-  [ "dune" "subst" ] {pinned}
   [ "dune" "build" "-p" name "-j" jobs ]
   [ "dune" "runtest" "-p" name "-j" jobs ] {with-test}
 ]
@@ -23,7 +22,7 @@ depends: [
   "result"     {>= "1.5"}
   "bechamel"   {= version}
   "rresult"
-  "ocplib-json-typed"
+  "ocplib-json-typed" {>= "0.7.1"}
   "jsonm"
-  "fmt"
+  "fmt"        {>= "0.9.0"}
 ]
