@@ -1,39 +1,39 @@
 (** {1 Bechamel, a simple and agnostic micro-benchmarking framework.}
 
     Bechamel is a simple and {i agnostic} micro-benchmarking framework to help
-    the developer to prove some metrics and compare them for {b small} given
+    the developer to prove some metrics and compare them for a {b small} given
     function. It's measuring the performance of something "small", like a
     system call. Bechamel does not do, as we say, a macro-benchmark which can
     show performance regression or I/O congestion for instance. It permits just
-    to assert than a simple call of a small function [fn1] into a specific -
-    and well-know by the developer - can be faster (if you use a {i time}
-    metric) than a call of another small function [fn2].
+    to assert that a simple call of a small function [fn1] can be faster
+    (if you use a {i time} metric) than a call of another small function
+    [fn2].
 
-    By this way, it asserts than [fn1] should be more efficient than [fn2] and
-    it lets the developer {b to deduct} the best choice according to the
+    In this way, it asserts that [fn1] should be more efficient than [fn2] and
+    it lets the developer {b deduce} the best choice according to the
     runtime context.
 
-    Bechamel should {b not} lead premature optimization. It gives only
+    Bechamel should {b not} lead to premature optimization. It gives only
     clues/metrics about what you use, but you {b must} recontextualize results
-    according to your case to lead a {i certain} optimization.
+    according to your case to lead to {i certain} optimization.
 
     {2 How to use Bechamel?}
 
     Bechamel is split into 3 parts:
     - A user interface to define {i tests} (your small function)
     - A {i runner} which will record required metrics
-    - An {i analyzer} which will analyze {i raw} metrics and give you an
-      understated result
+    - An {i analyzer} which will analyze {i raw} metrics and give you a
+      stated result
 
     This is the core of Bechamel where the user is able to:
     - define its own tests
     - use its own metrics
-    - have a choice between 2 analyzes (for instance, Ordinary Least Square
-      analyze or RANdom SAmple Consensus analyze)
+    - have a choice between 2 analyses (for instance, Ordinary Least Square
+      analysis or RANdom SAmple Consensus analysis)
 
     {3 Make a test.}
 
-    The {!module:Test} gives an API which permits to define your tests. Let's
+    The {!module:Test} gives an API which permits defining your tests. Let's
     take the example of the recursive factorial and the "imperative" factorial:
     {[
       let rec fact0 n =
@@ -73,7 +73,7 @@
     {3 Run the benchmark.}
 
     Then, you need to run the benchmark and record metrics. Bechamel is
-    {i agnostic} to the system: it permits to record few metrics like the
+    {i agnostic} to the system: it permits recording a few metrics like the
     {!val:Toolkit.Instance.monotonic_clock} or how many words were allocated
     into the minor heap {!val:Toolkit.Instance.minor_allocated}.
 
@@ -85,7 +85,7 @@
 
     For instance, we will try to record the monotonic clock: it represents the
     absolute elapsed {i wall-clock} time since an arbitrary, fixed point in
-    the past (usually, the time since the program runs).
+    the past (usually, the time since the program began running).
 
     {[
       let benchmark () =
@@ -104,7 +104,7 @@
 
     {3 Analyze results.}
 
-    Finally, you probably want useful to know the time spent by our factorial
+    Finally, you probably want to know the time spent by our factorial
     functions! This result requires an analyze from metrics. Indeed, if you run
     one time [fact0] and record the monotonic clock, you will
     probably get a {i partial} result which fluctuated a lot per run:
@@ -163,9 +163,9 @@
     RANSAC are algorithms which try to guess this curve. Then, [a] will becomes
     the time spent by our function for [x = 1] and this is what we want:
 
-    > How many times I spend if I call {b one time} my function?
+    > How much time do I spend if I call my function {b one time}?
 
-    Some details occur between OLS and RANSAC but the documentation can help
+    Some details differ between OLS and RANSAC but the documentation can help
     you to determine which one you should take.
 
     {3 Show results.}
