@@ -24,7 +24,8 @@ module Make (Functor : S.FUNCTOR) = struct
     let () =
       let instance = X.instance in
       Hashtbl.add handlers
-        (Stdlib.Obj.extension_id [%extension_constructor T] [@warning "-3"])
+        (Stdlib.Obj.Extension_constructor.id [%extension_constructor T]
+         [@warning "-3"])
         (function T x -> V (x, instance) | _ -> raise Not_found)
   end
 
@@ -41,7 +42,7 @@ module Make (Functor : S.FUNCTOR) = struct
 
   let prj (t : t) =
     let uid =
-      Stdlib.Obj.((extension_id (extension_constructor t) [@warning "-3"]))
+      Stdlib.Obj.Extension_constructor.((id (of_val t) [@warning "-3"]))
     in
     iter t (Hashtbl.find_all handlers uid)
 end
