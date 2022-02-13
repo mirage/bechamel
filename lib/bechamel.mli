@@ -68,7 +68,7 @@
       {i benchmark} and released after. For instance, we can allocate a
       {i socket}, run {!val:Unix.write} and record metrics and release
       ({!val:Unix.close}) the resource then.
-    - Finally, we can define an {i indexed} with a required resource test
+    - Finally, we can define an {i indexed} test with a required resource
 
     {3 Run the benchmark.}
 
