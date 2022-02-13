@@ -1,14 +1,14 @@
 (** {1 Bechamel, a simple and agnostic micro-benchmarking framework.}
 
     Bechamel is a simple and {i agnostic} micro-benchmarking framework to help
-    the developer to prove some metrics and compare them for a {b small} given
-    function. It's measuring the performance of something "small", like a
+    the developer prove and compare metrics for a given {b small} function.
+    It's measuring the performance of something "small", like a
     system call. Bechamel does not do, as we say, a macro-benchmark which can
-    show performance regression or I/O congestion for instance. It permits just
-    to assert that a simple call of a small function [fn1] can be faster
-    (if you use a {i time} metric) than a call of another small function
-    [fn2].
+    show a performance regression or I/O congestion for instance.
 
+    It just permits to assert that a simple call of a small function [fn1]
+    can be faster than a call of another small function [fn2]
+    (if you use a {i time} metric).
     In this way, it asserts that [fn1] should be more efficient than [fn2] and
     it lets the developer {b deduce} the best choice according to the
     runtime context.
