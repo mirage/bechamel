@@ -27,9 +27,9 @@
     Using {!OLS} with the above data would yield an estimated execution time of
     [9.6] nanoseconds with a goodness of fit ([r²]) of [0.992].
 
-    More generally, Bechamel lets the user to choose {i predictors} and the
+    More generally, Bechamel lets the user choose the {i predictors} and
     {i responder}. Indeed, the user can use others metrics (such as [perf]) and
-    the API allows to analyze such metrics each other. *)
+    the API allows to analyze such metrics together. *)
 
 module OLS : sig
   type t
