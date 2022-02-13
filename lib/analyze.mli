@@ -70,19 +70,19 @@ module RANSAC : sig
 end
 
 type 'a t
-(** Type of analyze. *)
+(** Type of analysis. *)
 
 val ols : r_square:bool -> bootstrap:int -> predictors:string array -> OLS.t t
-(** [ols ~r_square ~bootstrap ~predictors] is an Ordinary Least Square analyze
+(** [ols ~r_square ~bootstrap ~predictors] is an Ordinary Least Square analysis
     on [predictors]. It calculate [r²] if [r_square = true]. [bootstrap] is the
     number of how many times Bechamel try to {i resample} measurements. *)
 
 val ransac : filter_outliers:bool -> predictor:string -> RANSAC.t t
 
 val one : 'a t -> Measure.witness -> Benchmark.t -> 'a
-(** [one analyze measure { Benchmark.stat; lr; kde; }] estimates the actual
+(** [one analysis measure { Benchmark.stat; lr; kde; }] estimates the actual
     given [measure] for one [predictors]. So,
-    [one analyze time { Benchmark.stat; lr; kde; }] where [analyze] is
+    [one analysis time { Benchmark.stat; lr; kde; }] where [analysis] is
     initialized with [run] {i predictor} wants to estimate actual
     {i run}-[time] (or execution time) value. *)
 
@@ -91,7 +91,7 @@ val all :
   -> Measure.witness
   -> (string, Benchmark.t) Hashtbl.t
   -> (string, 'a) Hashtbl.t
-(** [all analyze measure tbl] is an application of {!val:one} for all results
+(** [all analysis measure tbl] is an application of {!val:one} for all results
     from the given [tbl]. *)
 
 val merge :
