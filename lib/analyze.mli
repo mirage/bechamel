@@ -74,17 +74,17 @@ type 'a t
 
 val ols : r_square:bool -> bootstrap:int -> predictors:string array -> OLS.t t
 (** [ols ~r_square ~bootstrap ~predictors] is an Ordinary Least Square analysis
-    on [predictors]. It calculate [r²] if [r_square = true]. [bootstrap] is the
-    number of how many times Bechamel try to {i resample} measurements. *)
+    on [predictors]. It calculates [r²] if [r_square = true]. [bootstrap] defines
+     how many times Bechamel tries to {i resample} measurements. *)
 
 val ransac : filter_outliers:bool -> predictor:string -> RANSAC.t t
 
 val one : 'a t -> Measure.witness -> Benchmark.t -> 'a
 (** [one analysis measure { Benchmark.stat; lr; kde; }] estimates the actual
-    given [measure] for one [predictors]. So,
-    [one analysis time { Benchmark.stat; lr; kde; }] where [analysis] is
-    initialized with [run] {i predictor} wants to estimate actual
-    {i run}-[time] (or execution time) value. *)
+    given [measure] for one [predictor]. So,
+    [one analysis time { Benchmark.stat; lr; kde; }]
+     wants to estimate actual {i run}-[time] (or execution time) value,
+     where [analysis] is initialized with [run] {i predictor}. *)
 
 val all :
      'a t
