@@ -15,7 +15,7 @@
 
     Bechamel should {b not} lead to premature optimization. It gives only
     clues/metrics about what you use, but you {b must} recontextualize results
-    according to your case to lead to {i certain} optimization.
+    according to your case to lead to {i certain} optimizations.
 
     {2 How to use Bechamel?}
 
@@ -95,7 +95,7 @@
         Benchmark.all cfg instances tests
     ]}
 
-    The benchmark has many options and you should take a look on
+    The benchmark has many options and you should take a look at
     {!val:Benchmark.cfg}. They permit to refine the context of the execution.
     For instance, you can {i stabilize} the garbage-collector.
 
@@ -105,7 +105,7 @@
     {3 Analyze results.}
 
     Finally, you probably want to know the time spent by our factorial
-    functions! This result requires an analyze from metrics. Indeed, if you run
+    functions! This result requires to analyze our metrics. Indeed, if you run
     one time [fact0] and record the monotonic clock, you will
     probably get a {i partial} result which fluctuated a lot per run:
     {[
@@ -128,7 +128,7 @@
     ]}
 
     This is why Bechamel exists. From metrics, it can estimate the time spent
-    by our test. It exists 2 methods to do that:
+    by our test. There are 2 methods to do that:
     - calculate the Ordinary Least Square from metrics
     - calculate the RANdom Sample Consensus from metrics
 
