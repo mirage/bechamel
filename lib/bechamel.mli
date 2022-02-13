@@ -158,9 +158,9 @@
   +-----+------+------------+
     v}
 
-    From these metrics, we can guess a curve: [a * x + b = y] where, from our
+    From these metrics, we can fit a curve: [a * x + b = y] where, from our
     code, [x = Measure.run] and [y = Instance.monotonic_clock]. OLS and
-    RANSAC are algorithms which try to guess this curve. Then, [a] will becomes
+    RANSAC are algorithms which try to fit this curve. Then, [a] will become
     the time spent by our function for [x = 1] and this is what we want:
 
     > How much time do I spend if I call my function {b one time}?
