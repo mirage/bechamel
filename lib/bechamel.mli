@@ -173,7 +173,7 @@
     Bechamel has many ways to show results, but the core still is agnostic
     to the system and does not need anything (like {!module:Unix}) to show
     results. However, the distribution comes with many possibilities:
-    - A [notty] which show you results into your terminal
+    - A [notty] which shows your results in a terminal
     - An HTML + JavaScript which produces an [index.html]
 
     We will try to show the results {i via} our terminal, but the HTML +
