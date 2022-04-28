@@ -1,4 +1,4 @@
 (library
  (name bechamel_js)
  (public_name bechamel-js)
- (libraries bechamel fmt rresult result ocplib-json-typed jsonm))
+ (libraries bechamel fmt rresult result json-data-encoding jsonm))
