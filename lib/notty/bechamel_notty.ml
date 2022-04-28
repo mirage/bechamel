@@ -14,7 +14,7 @@ module Unit = struct
       Fmt.invalid_arg "A unit shoud be smaller than 5 bytes: %s" unit;
     Hashtbl.add units (Measure.label instance) unit
 
-  let label label = I.string A.empty label
+  let label label = I.string ~attr:A.empty label
 
   let unit_of_label label =
     try Hashtbl.find units label with Not_found -> label
@@ -48,7 +48,7 @@ let ols_value : predictor:string -> Analyze.OLS.t -> image =
     Fmt.invalid_arg "Predictor %s was not computed in %a." predictor
       Analyze.OLS.pp v;
 
-  let attrs =
+  let attr =
     match Analyze.OLS.r_square v with
     | Some r_square ->
         if r_square <= 0.5 then A.(bg red ++ st bold)
@@ -62,7 +62,7 @@ let ols_value : predictor:string -> Analyze.OLS.t -> image =
   let unit_responder = Unit.unit_of_label responder in
   let unit_predictor = Unit.unit_of_label predictor in
   match Analyze.OLS.estimates v with
-  | None -> I.string A.(bg red ++ st bold) "#none"
+  | None -> I.string ~attr:A.(bg red ++ st bold) "#none"
   | Some values -> (
       match
         List.fold_left2
@@ -71,14 +71,14 @@ let ols_value : predictor:string -> Analyze.OLS.t -> image =
       with
       | Some value ->
           let s = Fmt.str fmt_value value unit_responder unit_predictor in
-          I.string attrs s
+          I.string ~attr s
       | None -> assert false)
 
 (* XXX(dinosaure): should never occur. *)
 
 let ransac_value : Analyze.RANSAC.t -> image =
  fun v ->
-  let attrs =
+  let attr =
     let error = Analyze.RANSAC.error v in
     if error <= 0.5 then A.(bg red ++ st bold)
     else if error <= 0.75 then A.(fg red)
@@ -93,19 +93,19 @@ let ransac_value : Analyze.RANSAC.t -> image =
   let s =
     Fmt.str fmt_value (Analyze.RANSAC.mean v) unit_responder unit_predictor
   in
-  I.string attrs s
+  I.string ~attr s
 
-let corner_tl ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x256D)
-let corner_tr ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x256E)
-let corner_bl ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x2570)
-let corner_br ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x256F)
-let break_t ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x252C)
-let break_b ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x2534)
-let break_l ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x251C)
-let break_r ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x2524)
-let cross ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x253C)
-let line ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x2500)
-let sideline ?(attr = A.empty) = I.uchar attr (Uchar.of_int 0x2502)
+let corner_tl ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x256D)
+let corner_tr ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x256E)
+let corner_bl ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x2570)
+let corner_br ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x256F)
+let break_t ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x252C)
+let break_b ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x2534)
+let break_l ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x251C)
+let break_r ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x2524)
+let cross ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x253C)
+let line ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x2500)
+let sideline ?(attr = A.empty) = I.uchar ~attr (Uchar.of_int 0x2502)
 let grid xxs = xxs |> List.map I.hcat |> I.vcat
 
 type rect = { w : int; h : int }
@@ -146,10 +146,10 @@ module One = struct
         ; corner_tr 1 1
         ]
       ; [ sideline 1 1
-        ; I.(string A.(st italic) "name")
+        ; I.(string ~attr:A.(st italic) "name")
         ; I.void max_length_of_names 1
         ; sideline 1 1
-        ; I.(string A.empty responder |> hpad 2 0)
+        ; I.(string ~attr:A.empty responder |> hpad 2 0)
         ; I.void
             (rect.w
             - (max_length_of_names + 4 + 2 + 2 + 1 + String.length responder))
@@ -171,7 +171,7 @@ module One = struct
     let field =
       grid
         [ [ sideline 1 1
-          ; I.(string A.empty name |> hpad 2 0)
+          ; I.(string ~attr:A.empty name |> hpad 2 0)
           ; I.void (max_length_of_names + 4 - 2 - String.length name) 1
           ; sideline 1 1
           ; I.(
@@ -214,20 +214,20 @@ module One = struct
         ; break_r 1 1
         ]
       ; [ sideline 1 1
-        ; I.(string A.(st italic) "best")
+        ; I.(string ~attr:A.(st italic) "best")
         ; I.void max_length_of_names 1
         ; sideline 1 1
-        ; I.(string A.empty best |> hpad 2 0)
+        ; I.(string ~attr:A.empty best |> hpad 2 0)
         ; I.void
             (rect.w - (max_length_of_names + 4 + 2 + 2 + 1 + String.length best))
             1
         ; sideline 1 1
         ]
       ; [ sideline 1 1
-        ; I.(string A.(st italic) "worst")
+        ; I.(string ~attr:A.(st italic) "worst")
         ; I.void (max_length_of_names - 1) 1
         ; sideline 1 1
-        ; I.(string A.empty worst |> hpad 2 0)
+        ; I.(string ~attr:A.empty worst |> hpad 2 0)
         ; I.void
             (rect.w
             - (max_length_of_names + 4 + 2 + 2 + 1 + String.length worst))
@@ -302,7 +302,7 @@ module Multiple = struct
         (fun instance ->
           let rest = max_length_of_instances - String.length instance + 2 in
           [ sideline 1 1
-          ; I.(string A.empty instance |> I.hpad 2 0)
+          ; I.(string ~attr:A.empty instance |> I.hpad 2 0)
           ; I.void rest 0
           ])
         instances
@@ -310,7 +310,7 @@ module Multiple = struct
     in
     let cc =
       sideline 1 1
-      :: I.(string A.(st italic) "name")
+      :: I.(string ~attr:A.(st italic) "name")
       :: I.void max_length_of_names 1
       :: cc
     in
@@ -337,7 +337,7 @@ module Multiple = struct
 
     let ll =
       [ sideline 1 1
-      ; I.(string A.empty name |> hpad 2 0)
+      ; I.(string ~attr:A.empty name |> hpad 2 0)
       ; I.void (max_length_of_names + 4 - 2 - String.length name) 1
       ]
     in
