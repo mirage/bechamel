@@ -129,7 +129,7 @@ val make_grouped : name:string -> ?fmt:fmt_grouped -> t list -> t
       let test = Test.make_grouped ~name:"fibonacci" [ f0; f1; ] ;;
     ]}
 
-    This kind of test is helpful to compare results betwen many implementations. *)
+    This kind of test is helpful to compare results between many implementations. *)
 
 val name : t -> string
 (** [name t] returns the name of the test. *)

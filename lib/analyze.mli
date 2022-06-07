@@ -27,9 +27,9 @@
     Using {!OLS} with the above data would yield an estimated execution time of
     [9.6] nanoseconds with a goodness of fit ([r²]) of [0.992].
 
-    More generally, Bechamel lets the user to choose {i predictors} and the
+    More generally, Bechamel lets the user choose the {i predictors} and
     {i responder}. Indeed, the user can use others metrics (such as [perf]) and
-    the API allows to analyze such metrics each other. *)
+    the API allows to analyze such metrics together. *)
 
 module OLS : sig
   type t
@@ -70,28 +70,28 @@ module RANSAC : sig
 end
 
 type 'a t
-(** Type of analyze. *)
+(** Type of analysis. *)
 
 val ols : r_square:bool -> bootstrap:int -> predictors:string array -> OLS.t t
-(** [ols ~r_square ~bootstrap ~predictors] is an Ordinary Least Square analyze
-    on [predictors]. It calculate [r²] if [r_square = true]. [bootstrap] is the
-    number of how many times Bechamel try to {i resample} measurements. *)
+(** [ols ~r_square ~bootstrap ~predictors] is an Ordinary Least Square analysis
+    on [predictors]. It calculates [r²] if [r_square = true]. [bootstrap] defines
+     how many times Bechamel tries to {i resample} measurements. *)
 
 val ransac : filter_outliers:bool -> predictor:string -> RANSAC.t t
 
 val one : 'a t -> Measure.witness -> Benchmark.t -> 'a
-(** [one analyze measure { Benchmark.stat; lr; kde; }] estimates the actual
-    given [measure] for one [predictors]. So,
-    [one analyze time { Benchmark.stat; lr; kde; }] where [analyze] is
-    initialized with [run] {i predictor} wants to estimate actual
-    {i run}-[time] (or execution time) value. *)
+(** [one analysis measure { Benchmark.stat; lr; kde; }] estimates the actual
+    given [measure] for one [predictor]. So,
+    [one analysis time { Benchmark.stat; lr; kde; }]
+     wants to estimate actual {i run}-[time] (or execution time) value,
+     where [analysis] is initialized with [run] {i predictor}. *)
 
 val all :
      'a t
   -> Measure.witness
   -> (string, Benchmark.t) Hashtbl.t
   -> (string, 'a) Hashtbl.t
-(** [all analyze measure tbl] is an application of {!val:one} for all results
+(** [all analysis measure tbl] is an application of {!val:one} for all results
     from the given [tbl]. *)
 
 val merge :

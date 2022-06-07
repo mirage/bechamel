@@ -24,7 +24,7 @@ val cfg :
       benchmarks is actually 2x[quota].
     - [sampling] is the way to grow the [run] metric (default to
       [`Geometric 1.0.1]).
-    - [stabilize] allows the benchamrk to {i stabilize} the garbage collector
+    - [stabilize] allows the benchmark to {i stabilize} the garbage collector
       before each run (default to [true]).
     - [start] is the first value of the [run] metric (default to [1]). *)
 
@@ -57,7 +57,7 @@ type t =
     - [stats] contains all the information about the benchmarks as described
       above
     - [lr] contains the measurements necessary for oLS and ransac analysis.
-    - [kde] optionnaly contains more measurements to enable the display of
+    - [kde] optionally contains more measurements to enable the display of
       density function (KDE or histogram) with the js display. *)
 
 val run : configuration -> Measure.witness list -> Test.Elt.t -> t

@@ -5,7 +5,7 @@ type 'a measure
 (** Type of measure. ['a] represents the {i witness} to record the measure. *)
 
 type witness
-(** Abtract type of a {i witness} to be able to record a {!measure}. *)
+(** Abstract type of a {i witness} to be able to record a {!measure}. *)
 
 val register : 'w impl -> 'w measure
 (** [register (module Measure)] registers a implementation to record a specific
@@ -16,11 +16,11 @@ val instance : 'w impl -> 'w measure -> witness
     introspect a measure [measure]. *)
 
 val load : witness -> unit
-(** [load w] signals to the operating-system to allocate ressources needed to
+(** [load w] signals to the operating-system to allocate resources needed to
     record the underlying measure. *)
 
 val unload : witness -> unit
-(** [unload w] releases operating-system's ressources to record the underlying
+(** [unload w] releases the operating-system's resources used record the underlying
     measure. *)
 
 val label : witness -> string

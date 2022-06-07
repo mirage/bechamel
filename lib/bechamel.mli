@@ -1,21 +1,21 @@
 (** {1 Bechamel, a simple and agnostic micro-benchmarking framework.}
 
     Bechamel is a simple and {i agnostic} micro-benchmarking framework to help
-    the developer to prove some metrics and compare them for a {b small} given
-    function. It's measuring the performance of something "small", like a
+    the developer prove and compare metrics for a given {b small} function.
+    It's measuring the performance of something "small", like a
     system call. Bechamel does not do, as we say, a macro-benchmark which can
-    show performance regression or I/O congestion for instance. It permits just
-    to assert that a simple call of a small function [fn1] can be faster
-    (if you use a {i time} metric) than a call of another small function
-    [fn2].
+    show a performance regression or I/O congestion for instance.
 
+    It just permits to assert that a simple call of a small function [fn1]
+    can be faster than a call of another small function [fn2]
+    (if you use a {i time} metric).
     In this way, it asserts that [fn1] should be more efficient than [fn2] and
     it lets the developer {b deduce} the best choice according to the
     runtime context.
 
     Bechamel should {b not} lead to premature optimization. It gives only
     clues/metrics about what you use, but you {b must} recontextualize results
-    according to your case to lead to {i certain} optimization.
+    according to your case to lead to {i certain} optimizations.
 
     {2 How to use Bechamel?}
 
@@ -68,7 +68,7 @@
       {i benchmark} and released after. For instance, we can allocate a
       {i socket}, run {!val:Unix.write} and record metrics and release
       ({!val:Unix.close}) the resource then.
-    - Finally, we can define an {i indexed} with a required resource test
+    - Finally, we can define an {i indexed} test with a required resource
 
     {3 Run the benchmark.}
 
@@ -95,7 +95,7 @@
         Benchmark.all cfg instances tests
     ]}
 
-    The benchmark has many options and you should take a look on
+    The benchmark has many options and you should take a look at
     {!val:Benchmark.cfg}. They permit to refine the context of the execution.
     For instance, you can {i stabilize} the garbage-collector.
 
@@ -105,7 +105,7 @@
     {3 Analyze results.}
 
     Finally, you probably want to know the time spent by our factorial
-    functions! This result requires an analyze from metrics. Indeed, if you run
+    functions! This result requires to analyze our metrics. Indeed, if you run
     one time [fact0] and record the monotonic clock, you will
     probably get a {i partial} result which fluctuated a lot per run:
     {[
@@ -128,7 +128,7 @@
     ]}
 
     This is why Bechamel exists. From metrics, it can estimate the time spent
-    by our test. It exists 2 methods to do that:
+    by our test. There are 2 methods to do that:
     - calculate the Ordinary Least Square from metrics
     - calculate the RANdom Sample Consensus from metrics
 
@@ -158,9 +158,9 @@
   +-----+------+------------+
     v}
 
-    From these metrics, we can guess a curve: [a * x + b = y] where, from our
+    From these metrics, we can fit a curve: [a * x + b = y] where, from our
     code, [x = Measure.run] and [y = Instance.monotonic_clock]. OLS and
-    RANSAC are algorithms which try to guess this curve. Then, [a] will becomes
+    RANSAC are algorithms which try to fit this curve. Then, [a] will become
     the time spent by our function for [x = 1] and this is what we want:
 
     > How much time do I spend if I call my function {b one time}?
@@ -173,7 +173,7 @@
     Bechamel has many ways to show results, but the core still is agnostic
     to the system and does not need anything (like {!module:Unix}) to show
     results. However, the distribution comes with many possibilities:
-    - A [notty] which show you results into your terminal
+    - A [notty] which shows your results in a terminal
     - An HTML + JavaScript which produces an [index.html]
 
     We will try to show the results {i via} our terminal, but the HTML +
