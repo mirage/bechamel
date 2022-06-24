@@ -14,7 +14,29 @@ struct
     let kind = Perf.kind witness in
     Perf.Attr.Kind.to_string kind
 
-  let unit = label
+  let unit witness =
+    match Perf.kind witness with
+    | Cycles -> "cyc"
+    | Instructions -> "inst"
+    | Cache_references -> "cref"
+    | Cache_misses -> "cmiss"
+    | Branch_misses -> "bmiss"
+    | Branch_instructions -> "binst"
+    | Bus_cycles -> "bcyc"
+    | Stalled_cycles_frontend -> "stcyc"
+    | Stalled_cycles_backend -> "stcyc"
+    | Ref_cpu_cycles -> "cyc"
+    | Cpu_clock -> "ns"
+    | Task_clock -> "ns"
+    | Page_faults -> "pft"
+    | Context_switches -> "cxsw"
+    | Cpu_migrations -> "migr"
+    | Page_faults_min -> "mnpft"
+    | Page_faults_maj -> "mjpft"
+    | Alignment_faults -> "alft"
+    | Emulation_faults -> "emuft"
+    | Dummy -> "dummy"
+
   let get witness = Int64.to_float (Perf.read witness)
 end
 
@@ -103,8 +125,12 @@ open Bechamel
 module Extension = struct
   include Toolkit.Extension
 
-  (* XXX(dinosaure): only software measures. *)
-
+  let cycles = Measure.register (module Cycles)
+  let instructions = Measure.register (module Instructions)
+  let cache_references = Measure.register (module Cache_references)
+  let cache_misses = Measure.register (module Cache_misses)
+  let branch_instructions = Measure.register (module Branch_instructions)
+  let branch_misses = Measure.register (module Branch_misses)
   let cpu_clock = Measure.register (module Cpu_clock)
   let task_clock = Measure.register (module Task_clock)
   let page_faults = Measure.register (module Page_faults)
@@ -119,6 +145,28 @@ end
 
 module Instance = struct
   include Toolkit.Instance
+
+  (* Some measures are not implemented here because they are not available on
+     some machines, and thus implementing them here would prevent bechamel-perf
+     from loading. These measures are: Bus_cycles, Ref_cpu_cycles,
+     Stalled_cycles_frontend, Stalled_cycles_backend. *)
+
+  let cycles = Measure.instance (module Cycles) Extension.cycles
+
+  let instructions =
+    Measure.instance (module Instructions) Extension.instructions
+
+  let cache_references =
+    Measure.instance (module Cache_references) Extension.cache_references
+
+  let cache_misses =
+    Measure.instance (module Cache_misses) Extension.cache_misses
+
+  let branch_instructions =
+    Measure.instance (module Branch_instructions) Extension.branch_instructions
+
+  let branch_misses =
+    Measure.instance (module Branch_misses) Extension.branch_misses
 
   let cpu_clock = Measure.instance (module Cpu_clock) Extension.cpu_clock
   let task_clock = Measure.instance (module Task_clock) Extension.task_clock
