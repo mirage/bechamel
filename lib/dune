@@ -1,4 +1,4 @@
 (library
  (name bechamel)
  (public_name bechamel)
- (libraries stdlib-shims fmt monotonic_clock))
+ (libraries fmt monotonic_clock))
