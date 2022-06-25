@@ -1,3 +1,11 @@
+### v0.3.0 2022-06-24 Paris (France)
+
+- Improve the entry point documentation (@yomimono, #28)
+- Fix deprecated `Obj` function (@OlivierNicole, #29)
+- Use json-data-encoding instead of ocplib-json-typed (@samoht, #34)
+- Improve the documentation (@edwintorok, #32)
+- Add hardware perf measures (@OlivierNicole, #30) 
+
 ### v0.2.0 2022-01-17 Paris (France)
 
 - Add missing dependencies (@kit-ty-kate, #20)
