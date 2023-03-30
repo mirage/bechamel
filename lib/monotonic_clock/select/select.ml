@@ -1,11 +1,13 @@
 let invalid_arg fmt = Format.ksprintf (fun s -> invalid_arg s) fmt
 
 let load_file filename =
-  let ic = open_in filename in
-  let ln = in_channel_length ic in
-  let rs = Bytes.create ln in
-  let () = really_input ic rs 0 ln in
-  Bytes.unsafe_to_string rs
+  try
+    let ic = open_in_bin filename in
+    let ln = in_channel_length ic in
+    let rs = Bytes.create ln in
+    let () = really_input ic rs 0 ln in
+    Bytes.unsafe_to_string rs
+  with End_of_file -> invalid_arg "EOF reading: %S" filename
 
 let sexp_linux = "(-lrt)"
 let sexp_empty = "()"
