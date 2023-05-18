@@ -1,4 +1,4 @@
 type 'a t = 'a
 
-external stage : 'a -> 'a t = "%identity"
-external unstage : 'a t -> 'a = "%identity"
+let stage = Sys.opaque_identity
+let unstage = Sys.opaque_identity
