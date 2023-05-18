@@ -91,7 +91,7 @@ let run cfg measures test : t =
         , always empty_array
         , ignore )
     | Test.Multiple ->
-        let v = unsafe_get (Test.Multiple.prj (allocate 1)) 1 in
+        let v = unsafe_get (Test.Multiple.prj (allocate 1)) 0 in
         ( always v
         , (fun v -> free (Test.Multiple.inj [| v |]))
         , (fun n -> Test.Multiple.prj (allocate n))
