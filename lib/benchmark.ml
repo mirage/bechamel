@@ -1,11 +1,10 @@
-external unsafe_get : 'a array -> int -> 'a = "%array_unsafe_get"
+open Unsafe
 
 let always x _ = x
-let empty_array = [||]
 
 let runnable_with_resources f vs i =
   for _ = 1 to i do
-    ignore (Sys.opaque_identity (f (unsafe_get vs (i - 1))))
+    ignore (Sys.opaque_identity (f (unsafe_array_get vs (i - 1))))
   done
   [@@inline]
 
@@ -92,7 +91,7 @@ let run cfg measures test : t =
         , always v
         , fun a -> a |> Array.iter @@ fun v -> free (Test.Uniq.inj v) )
     | Test.Multiple ->
-        let v = unsafe_get (Test.Multiple.prj (allocate 1)) 0 in
+        let v = unsafe_array_get (Test.Multiple.prj (allocate 1)) 0 in
         ( always v
         , (fun v -> free (Test.Multiple.inj [| v |]))
         , (fun n -> Test.Multiple.prj (allocate n))
@@ -185,7 +184,7 @@ let run cfg measures test : t =
           && !current_idx < kde_limit
         do
           let resources = allocate1 1 in
-          let resource = unsafe_get resources 0 in
+          let resource = unsafe_array_get resources 0 in
 
           for i = 0 to length - 1 do
             m0.(i) <- records.(i) ()
