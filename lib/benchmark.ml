@@ -86,10 +86,11 @@ let run cfg measures test : t =
   let (allocate0 : unit -> _), free0, (allocate1 : int -> _), free1 =
     match kind with
     | Test.Uniq ->
+        let v = [| Test.Uniq.prj (allocate ()) |] in
         ( (fun () -> Test.Uniq.prj (allocate ()))
         , (fun v -> free (Test.Uniq.inj v))
-        , always empty_array
-        , ignore )
+        , always v
+        , fun a -> a |> Array.iter @@ fun v -> free (Test.Uniq.inj v) )
     | Test.Multiple ->
         let v = unsafe_get (Test.Multiple.prj (allocate 1)) 0 in
         ( always v
