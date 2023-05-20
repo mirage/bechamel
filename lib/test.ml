@@ -89,9 +89,7 @@ let make ~name fn =
       ]
   }
 
-external unsafe_array_make : int -> 'a -> 'a array = "caml_make_vect"
-external unsafe_array_get : 'a array -> int -> 'a = "%array_unsafe_get"
-external unsafe_array_set : 'a array -> int -> 'a -> unit = "%array_unsafe_set"
+open Unsafe
 
 let make_multiple_allocate f = function
   | 0 -> [||]
