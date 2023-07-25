@@ -18,11 +18,14 @@ let () =
     | [| _; "--system"; system; "-o"; output |] ->
         let system =
           match system with
-          | "linux" | "linux_eabihf" | "linux_elf" | "elf" -> `Linux
+          | "linux" | "elf" -> `Linux
           | "win32" | "win64" | "mingw64" | "mingw" | "cygwin" -> `Windows
           | "freebsd" -> `FreeBSD
           | "macosx" -> `MacOSX
-          | v -> invalid_arg "Invalid argument of system option: %s" v
+          | v ->
+            if String.sub system 0 5 = "linux"
+            then `Linux
+            else invalid_arg "Invalid argument of system option: %s" v
         in
         (system, output)
     | _ ->
