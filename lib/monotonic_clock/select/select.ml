@@ -19,8 +19,8 @@ let () =
         let system =
           match system with
           | "linux" | "linux_eabihf" | "linux_elf" | "elf" -> `Linux
+          | "win32" | "win64" | "mingw64" | "mingw" | "cygwin" -> `Windows
           | "freebsd" -> `FreeBSD
-          | "windows" | "mingw64" | "cygwin" -> `Windows
           | "macosx" -> `MacOSX
           | v -> invalid_arg "Invalid argument of system option: %s" v
         in
