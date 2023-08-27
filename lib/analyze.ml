@@ -8,14 +8,21 @@ module OLS = struct
   end
 
   (* Linear regression inputs *)
-  let make_lr_inputs ~responder ~predictors m =
+  let make_lr_inputs ?indices ~responder ~predictors m =
     let responder_accessor = Measurement_raw.get ~label:responder in
     let predictors_accessor =
       Array.map (fun label -> Measurement_raw.get ~label) predictors
     in
-    ( Array.init (Array.length m) (fun i ->
-          Array.map (fun a -> a m.(i)) predictors_accessor)
-    , Array.init (Array.length m) (fun i -> responder_accessor m.(i)) )
+    match indices with
+    | Some indices ->
+        ( Array.map
+            (fun i -> Array.map (fun a -> a m.(i)) predictors_accessor)
+            indices
+        , Array.map (fun i -> responder_accessor m.(i)) indices )
+    | None ->
+        ( Array.init (Array.length m) (fun i ->
+              Array.map (fun a -> a m.(i)) predictors_accessor)
+        , Array.init (Array.length m) (fun i -> responder_accessor m.(i)) )
 
   type t =
     { predictors : string array
@@ -95,7 +102,9 @@ module OLS = struct
         let bootstrap_coeffs = Array.init p (fun _ -> Array.make trials 0.0) in
         for i = 0 to trials - 1 do
           random_indices_in_place indices ~max:(Array.length m);
-          let matrix, vector = make_lr_inputs ~responder ~predictors m in
+          let matrix, vector =
+            make_lr_inputs ~indices ~responder ~predictors m
+          in
           match Linear_algebra.ols ~in_place:true matrix vector with
           | Ok bt_ols_result ->
               for p = 0 to p - 1 do
