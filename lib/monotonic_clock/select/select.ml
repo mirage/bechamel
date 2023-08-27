@@ -24,11 +24,10 @@ let () =
           | "macosx" -> `MacOSX
           | "beos" | "dragonfly" | "bsd" | "openbsd" | "netbsd" | "gnu"
           | "solaris" | "unknown" ->
-            invalid_arg "Unsupported system: %s" system
+              invalid_arg "Unsupported system: %s" system
           | v ->
-            if String.sub system 0 5 = "linux"
-            then `Linux
-            else invalid_arg "Invalid argument of system option: %s" v
+              if String.sub system 0 5 = "linux" then `Linux
+              else invalid_arg "Invalid argument of system option: %s" v
         in
         (system, output)
     | _ ->
