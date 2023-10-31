@@ -1,3 +1,10 @@
+### v0.5.0 2023-10-31 Paris (France)
+
+- Fix unsafe access causing SIGSEGV (@edwintorok, #43)
+- Fix compulation of the confidence indicator (@edwintorok, @lindig, @dinosaure, #45)
+- Upgrade monotonic clock detection (@dra27, #44)
+- Fix double-free when we use resources (@edwintorok, @dinosaure, #47)
+
 ### v0.4.0 2023-03-30 Paris (France)
 
 - Fix the support of OCaml 5.0 (@avsm, #38)
