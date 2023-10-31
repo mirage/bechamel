@@ -82,17 +82,16 @@ let run cfg measures test : t =
   let run = ref cfg.start in
   let (Test.V { fn; kind; allocate; free }) = Test.Elt.fn test in
   let fn = fn `Init in
+  (* allocate0 always defined, allocate1 may not be *)
   let (allocate0 : unit -> _), free0, (allocate1 : int -> _), free1 =
     match kind with
     | Test.Uniq ->
-        let v = [| Test.Uniq.prj (allocate ()) |] in
         ( (fun () -> Test.Uniq.prj (allocate ()))
         , (fun v -> free (Test.Uniq.inj v))
-        , always v
-        , fun a -> a |> Array.iter @@ fun v -> free (Test.Uniq.inj v) )
+        , always [||]
+        , ignore )
     | Test.Multiple ->
-        let v = unsafe_array_get (Test.Multiple.prj (allocate 1)) 0 in
-        ( always v
+        ( (fun () -> unsafe_array_get (Test.Multiple.prj (allocate 1)) 0)
         , (fun v -> free (Test.Multiple.inj [| v |]))
         , (fun n -> Test.Multiple.prj (allocate n))
         , fun v -> free (Test.Multiple.inj v) )
@@ -183,8 +182,7 @@ let run cfg measures test : t =
           (not (exceeded_allowed_time cfg.quota init_time'))
           && !current_idx < kde_limit
         do
-          let resources = allocate1 1 in
-          let resource = unsafe_array_get resources 0 in
+          let resource = allocate0 () in
 
           for i = 0 to length - 1 do
             m0.(i) <- records.(i) ()
@@ -196,7 +194,7 @@ let run cfg measures test : t =
             m1.(i) <- records.(i) ()
           done;
 
-          free1 resources;
+          free0 resource;
 
           for i = 0 to length - 1 do
             mkde.((!current_idx * length) + i) <- m1.(i) -. m0.(i)
