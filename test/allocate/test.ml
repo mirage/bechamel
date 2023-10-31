@@ -1,12 +1,12 @@
 open Bechamel
 open Bechamel.Toolkit
 
-let all_released =
+let all_released kind =
   Alcotest.test_case "all released" `Quick @@ fun () ->
   let global = ref 0 in
   let called = ref 0 in
   let test =
-    Test.make_with_resource ~name:"test" Test.uniq
+    Test.make_with_resource ~name:"test" kind
       ~allocate:(fun () ->
         incr called;
         incr global)
@@ -19,12 +19,12 @@ let all_released =
   Alcotest.(check int) "all released" !global 0;
   if !called = 0 then Alcotest.failf "Benchmark does not allocate"
 
-let with_kde =
+let with_kde kind =
   Alcotest.test_case "with kde" `Quick @@ fun () ->
   let global = ref 0 in
   let called = ref 0 in
   let test =
-    Test.make_with_resource ~name:"test" Test.uniq
+    Test.make_with_resource ~name:"test" kind
       ~allocate:(fun () ->
         incr called;
         incr global)
@@ -37,12 +37,12 @@ let with_kde =
   Alcotest.(check int) "with kde" !global 0;
   if !called = 0 then Alcotest.failf "Benchmark does not allocate"
 
-let uniq_resources =
+let uniq_resources kind =
   Alcotest.test_case "uniq resources" `Quick @@ fun () ->
   let tbl = Hashtbl.create 0x100 in
   let idx = ref 0 in
   let test =
-    Test.make_with_resource ~name:"test" Test.uniq
+    Test.make_with_resource ~name:"test" kind
       ~allocate:(fun () ->
         let value = !idx in
         incr idx;
@@ -56,12 +56,12 @@ let uniq_resources =
   let _ = Benchmark.run cfg Instance.[ monotonic_clock ] test in
   Alcotest.(check int) "uniq resources" (Hashtbl.length tbl) 0
 
-let double_free =
+let double_free kind =
   Alcotest.test_case "double free" `Quick @@ fun () ->
   let tbl = Hashtbl.create 0x100 in
   let idx = ref 0 in
   let test =
-    Test.make_with_resource ~name:"test" Test.uniq
+    Test.make_with_resource ~name:"test" kind
       ~allocate:(fun () ->
         let value = !idx in
         incr idx;
@@ -80,4 +80,16 @@ let double_free =
 
 let () =
   Alcotest.run "allocate"
-    [ ("uniq", [ all_released; with_kde; uniq_resources; double_free ]) ]
+    [ ( "uniq"
+      , [ all_released Test.uniq
+        ; with_kde Test.uniq
+        ; uniq_resources Test.uniq
+        ; double_free Test.uniq
+        ] )
+    ; ( "multiple"
+      , [ all_released Test.multiple
+        ; with_kde Test.multiple
+        ; uniq_resources Test.multiple
+        ; double_free Test.multiple
+        ] )
+    ]
