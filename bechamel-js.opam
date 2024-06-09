@@ -24,4 +24,5 @@ depends: [
   "json-data-encoding"
   "jsonm"
   "fmt"        {>= "0.9.0"}
+  "result"
 ]
