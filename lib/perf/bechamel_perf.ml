@@ -8,7 +8,12 @@ struct
 
   let load witness = Perf.enable witness
   let unload witness = Perf.disable witness
-  let make () = Perf.make (Perf.Attr.make X.kind)
+
+  let make () =
+    try Perf.make (Perf.Attr.make X.kind)
+    with Unix.Unix_error (Unix.EACCES, _, _) ->
+      (* kernel.perf_event_paranoid doesn't allow measuring the kernel *)
+      Perf.make (Perf.Attr.make ~flags:[ Perf.Attr.Exclude_kernel ] X.kind)
 
   let label witness =
     let kind = Perf.kind witness in
