@@ -9,7 +9,9 @@
     If you want to use [Bechamel_perf] as a normal user, you should take a look
     on {{:https://www.kernel.org/doc/Documentation/sysctl/kernel.txt}the
     documentation about [perf_paranoid]}.
-*)
+
+    If the user wants to measuring the kernel, the program must be run as root.
+    We cannot measure in a virtualized environment ([ENOENT] is returned). *)
 
 open Bechamel
 

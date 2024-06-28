@@ -3,7 +3,7 @@
  (modules list)
  (public_name bechamel-notty.examples.list)
  (package bechamel-notty)
- (libraries bechamel notty.unix bechamel-notty))
+ (libraries bechamel notty.unix unix bechamel-notty))
 
 (executable
  (name sqrt)

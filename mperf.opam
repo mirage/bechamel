@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name:         "mperf"
-version:      "0.1"
+version:      "0.5"
 maintainer:   [ "Romain Calascibetta <romain.calascibetta@gmail.com>" ]
 authors:      [ "Vincent Bernardoff <vincent.bernardoff@ocamlpro.com>" "Pierre Chambart <pierre.chambart@ocamlpro.com>" ]
 homepage:     "http://github.com/dinosaure/bechamel"
