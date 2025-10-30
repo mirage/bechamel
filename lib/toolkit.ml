@@ -15,7 +15,7 @@ module Minor_allocated = struct
   let load () = ()
   let unload () = ()
   let make () = ()
-  let get () = (Gc.quick_stat ()).minor_words
+  let get () = Gc.minor_words ()
   let label () = "minor-allocated"
   let unit () = "mnw"
 end
