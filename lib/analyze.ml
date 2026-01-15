@@ -356,3 +356,43 @@ let merge : type a.
     (fun instance result -> Hashtbl.add ret (Measure.label instance) result)
     instances results;
   ret
+
+let ols_to_table ~instances ~bootstrap ~r_square ~predictors results =
+  let ols = Analyze.ols ~bootstrap ~r_square ~predictors in
+  let metrics =
+    List.init (Array.length predictors) (fun i -> `Predictor i)
+    @ if r_square then [ `R_square ] else []
+  in
+  let rows =
+    List.map
+      (fun (test_name, results) ->
+        ( test_name
+        , List.concat_map
+            (fun inst ->
+              let ols = Analyze.one ols inst results in
+              let estimates =
+                Option.value ~default:[] (Analyze.OLS.estimates ols)
+              in
+              List.map
+                (function
+                  | `Predictor i ->
+                      Option.value ~default:Float.nan (List.nth_opt estimates i)
+                  | `R_square ->
+                      Option.value ~default:Float.nan (Analyze.OLS.r_square ols))
+                metrics)
+            instances ))
+      results
+  in
+  let header =
+    List.concat_map
+      (fun inst ->
+        let lbl = Measure.label inst and unit = Measure.unit inst in
+        List.map
+          (function
+            | `Predictor i ->
+                Printf.sprintf "%s (%s/%s)" lbl unit predictors.(i)
+            | `R_square -> Printf.sprintf "%s (R²)" lbl)
+          metrics)
+      instances
+  in
+  (header, rows)
