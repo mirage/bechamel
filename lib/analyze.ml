@@ -358,41 +358,32 @@ let merge : type a.
   ret
 
 let ols_to_table ~instances ~bootstrap ~r_square ~predictors results =
-  let ols = Analyze.ols ~bootstrap ~r_square ~predictors in
+  let ols = ols ~bootstrap ~r_square ~predictors in
   let metrics =
     List.init (Array.length predictors) (fun i -> `Predictor i)
     @ if r_square then [ `R_square ] else []
   in
   let rows =
-    List.map
-      (fun (test_name, results) ->
-        ( test_name
-        , List.concat_map
-            (fun inst ->
-              let ols = Analyze.one ols inst results in
-              let estimates =
-                Option.value ~default:[] (Analyze.OLS.estimates ols)
-              in
-              List.map
-                (function
-                  | `Predictor i ->
-                      Option.value ~default:Float.nan (List.nth_opt estimates i)
-                  | `R_square ->
-                      Option.value ~default:Float.nan (Analyze.OLS.r_square ols))
-                metrics)
-            instances ))
-      results
-  in
+    let fn (test_name, results)=
+      let per_insts =
+        let fn inst =
+          let ols = one ols inst results in
+          let estimates = Option.value ~default:[] (OLS.estimates ols) in
+          let fn = function
+             | `Predictor idx -> Option.value ~default:Float.nan (List.nth_opt estimates idx)
+             | `R_square -> Option.value ~default:Float.nan (OLS.r_square ols) in
+          List.map fn metrics in
+        List.concat_map fn instances in
+      (test_name, per_insts) in
+    List.map fn results in
   let header =
-    List.concat_map
-      (fun inst ->
-        let lbl = Measure.label inst and unit = Measure.unit inst in
-        List.map
-          (function
-            | `Predictor i ->
-                Printf.sprintf "%s (%s/%s)" lbl unit predictors.(i)
-            | `R_square -> Printf.sprintf "%s (R²)" lbl)
-          metrics)
-      instances
+    let fn inst =
+      let lbl = Measure.label inst
+      and unit = Measure.unit inst in
+      let fn = function
+        | `Predictor idx -> Fmt.str "%s (%s/%s)" lbl unit predictors.(idx)
+        | `R_square -> Fmt.str "%s (R²)" lbl in
+      List.map fn metrics in
+    List.concat_map fn instances
   in
   (header, rows)

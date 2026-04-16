@@ -104,8 +104,9 @@ val merge :
     this specific measure. *)
 
 val ols_to_table :
-     r_square:bool
+     instances:Measure.witness list
   -> bootstrap:int
+  -> r_square:bool
   -> predictors:string array
   -> (string * Benchmark.t) list
   -> string list * (string * float list) list
