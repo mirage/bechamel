@@ -114,29 +114,28 @@ val ols_to_table :
     format. Example usage:
 
     {@ocaml[
-      let tests = [ (* Test.make ... *) ]
-      let instances = Instance.[ monotonic_clock; minor_allocated; promoted ]
-      let predictors = [| Measure.run |]
+    let tests = [ (* Test.make ... *) ]
+    let instances = Instance.[ monotonic_clock; minor_allocated; promoted ]
+    let predictors = [| Measure.run |]
 
-      let benchmark () =
-        let cfg = Benchmark.cfg ~quota:(Time.second 0.33) () in
+    let benchmark () =
+      let cfg = Benchmark.cfg ~quota:(Time.second 0.33) () in
+      List.map
+        (fun t -> (Test.Elt.name t, Benchmark.run cfg instances t))
+        (Test.expand tests)
+
+    let output_csv (header, rows) =
+      let rows =
         List.map
-          (fun t -> (Test.Elt.name t, Benchmark.run cfg instances t))
-          (Test.expand tests)
+          (fun (test_name, data) -> test_name :: List.map string_of_float data)
+          rows
+      in
+      let outf = "results.csv" in
+      Csv.save outf (("Test name" :: header) :: rows);
+      Printf.eprintf "Output saved to %S.\n%!" outf
 
-      let output_csv (header, rows) =
-        let rows =
-          List.map
-            (fun (test_name, data) ->
-              test_name :: List.map string_of_float data)
-            rows
-        in
-        let outf = "results.csv" in
-        Csv.save outf (("Test name" :: header) :: rows);
-        Printf.eprintf "Output saved to %S.\n%!" outf
-
-      let () =
-        benchmark ()
-        |> analyze_to_table ~instances ~bootstrap:0 ~r_square:false ~predictors
-        |> output_csv
+    let () =
+      benchmark ()
+      |> analyze_to_table ~instances ~bootstrap:0 ~r_square:false ~predictors
+      |> output_csv
     ]} *)
