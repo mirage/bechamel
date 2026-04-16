@@ -6,22 +6,21 @@ let runnable_with_resources f vs i =
   for _ = 1 to i do
     ignore (Sys.opaque_identity (f (unsafe_array_get vs (i - 1))))
   done
-  [@@inline]
+[@@inline]
 
 let runnable_with_resource f v i =
   for _ = 1 to i do
     ignore (Sys.opaque_identity (f v))
   done
-  [@@inline]
+[@@inline]
 
-let runnable :
-    type a v t. (a, v, t) Test.kind -> (a -> 'b) -> a -> a array -> int -> unit
-    =
+let runnable : type a v t.
+    (a, v, t) Test.kind -> (a -> 'b) -> a -> a array -> int -> unit =
  fun k f v vs i ->
   match k with
   | Test.Uniq -> runnable_with_resource f v i
   | Test.Multiple -> runnable_with_resources f vs i
- [@@inline]
+[@@inline]
 
 let record measure =
   let (Measure.V (m, (module M))) = Measure.prj measure in

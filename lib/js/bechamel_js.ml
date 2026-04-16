@@ -111,8 +111,7 @@ let channel filename =
 type raws = (string, Benchmark.t) Hashtbl.t
 type ols_results = (string, (string, Analyze.OLS.t) Hashtbl.t) Hashtbl.t
 
-let emit :
-    type a.
+let emit : type a.
        dst:a dst
     -> a
     -> ?compare:(string -> string -> int)

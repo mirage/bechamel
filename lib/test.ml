@@ -105,8 +105,7 @@ let make_multiple_free f arr =
     f (unsafe_array_get arr i)
   done
 
-let make_with_resource :
-    type a v k.
+let make_with_resource : type a v k.
        name:string
     -> (a, v, k) kind
     -> allocate:(unit -> a)
@@ -164,8 +163,7 @@ let make_indexed ~name ?(fmt : fmt_indexed = "%s:%d") ~args fn =
         args
   }
 
-let make_indexed_with_resource :
-    type a f g.
+let make_indexed_with_resource : type a f g.
        name:string
     -> ?fmt:fmt_indexed
     -> args:int list

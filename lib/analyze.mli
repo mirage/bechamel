@@ -5,15 +5,15 @@
     represent [{!Measurement_raw.t} array] collected by {!Benchmark.run}:
 
     {v
-  +-----+------+
-  | run | time |
-  +-----+------+
-  | 1   | 19   |
-  | 2   | 25   |
-  | 3   | 37   |
-  | 4   | 47   |
-  | 5   | 56   |
-  +-----+------+
+    +-----+------+
+    | run | time |
+    +-----+------+
+    | 1   | 19   |
+    | 2   | 25   |
+    | 3   | 37   |
+    | 4   | 47   |
+    | 5   | 56   |
+    +-----+------+
     v}
 
     Bechamel records 3000 samples and the number of iterations can grows
@@ -74,17 +74,17 @@ type 'a t
 
 val ols : r_square:bool -> bootstrap:int -> predictors:string array -> OLS.t t
 (** [ols ~r_square ~bootstrap ~predictors] is an Ordinary Least Square analysis
-    on [predictors]. It calculates [r²] if [r_square = true]. [bootstrap] defines
-     how many times Bechamel tries to {i resample} measurements. *)
+    on [predictors]. It calculates [r²] if [r_square = true]. [bootstrap]
+    defines how many times Bechamel tries to {i resample} measurements. *)
 
 val ransac : filter_outliers:bool -> predictor:string -> RANSAC.t t
 
 val one : 'a t -> Measure.witness -> Benchmark.t -> 'a
 (** [one analysis measure { Benchmark.stat; lr; kde; }] estimates the actual
     given [measure] for one [predictor]. So,
-    [one analysis time { Benchmark.stat; lr; kde; }]
-     wants to estimate actual {i run}-[time] (or execution time) value,
-     where [analysis] is initialized with [run] {i predictor}. *)
+    [one analysis time { Benchmark.stat; lr; kde; }] wants to estimate actual
+    {i run}-[time] (or execution time) value, where [analysis] is initialized
+    with [run] {i predictor}. *)
 
 val all :
      'a t
