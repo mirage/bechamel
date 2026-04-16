@@ -20,8 +20,8 @@ val load : witness -> unit
     record the underlying measure. *)
 
 val unload : witness -> unit
-(** [unload w] releases the operating-system's resources used record the underlying
-    measure. *)
+(** [unload w] releases the operating-system's resources used record the
+    underlying measure. *)
 
 val label : witness -> string
 (** [label w] is the name of the underlying measure represented by [w]. *)

@@ -300,7 +300,9 @@ let with_process_exn ?env ?timeout ?stdout ?stderr cmd attrs =
       in
       List.iter close counters;
       (* Remove stdout/stderr files iff they were left unspecified. *)
-      (match stdout with None -> Unix.unlink tmp_stdout_name | _ -> ());
+      (match stdout with
+      | None -> Unix.unlink tmp_stdout_name
+      | _ -> ());
       (match stderr with None -> Unix.unlink tmp_stderr_name | _ -> ());
       res
 

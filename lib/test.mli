@@ -53,9 +53,9 @@ val make : name:string -> (unit -> 'a) Staged.t -> t
     constructed with {!Staged.stage}:
 
     {[
-      let write =
-        Test.make ~name:"unix-write"
-          (Staged.stage @@ fun () -> Unix.write Unix.stdout "Hello World!")
+    let write =
+      Test.make ~name:"unix-write"
+        (Staged.stage @@ fun () -> Unix.write Unix.stdout "Hello World!")
     ]} *)
 
 val make_with_resource :
@@ -66,9 +66,9 @@ val make_with_resource :
   -> ('a -> 'b) Staged.t
   -> t
 (** [make_with_resource ~name k ~allocate ~free fn] is a naming benchmark
-    measuring [fn] with a pre-allocated resource ['v] (given by [allocate]).
-    It permits to measure [fn] which requires a resource allocated {b before}
-    the benchmark. Then, this resource can be free-ed {i via} the given [free]
+    measuring [fn] with a pre-allocated resource ['v] (given by [allocate]). It
+    permits to measure [fn] which requires a resource allocated {b before} the
+    benchmark. Then, this resource can be free-ed {i via} the given [free]
     function.
 
     Depending on the [k] given, the resource can be allocated only one time or
@@ -96,13 +96,13 @@ val make_indexed :
     (default to ["%s:%d"]).
 
     {[
-      let make_list words =
-        Staged.stage @@ fun () ->
-        let rec go n acc = if n = 0 then acc else go (n - 1) (n :: acc) in
-        go ((words / 3) + 1) []
+    let make_list words =
+      Staged.stage @@ fun () ->
+      let rec go n acc = if n = 0 then acc else go (n - 1) (n :: acc) in
+      go ((words / 3) + 1) []
 
-      let test =
-        make_indexed ~name:"make_list" ~args:[ 0; 10; 100; 100 ] make_list
+    let test =
+      make_indexed ~name:"make_list" ~args:[ 0; 10; 100; 100 ] make_list
     ]}
 
     This kind of test is helpful to see results of the {b same} implementation
@@ -129,7 +129,8 @@ val make_grouped : name:string -> ?fmt:fmt_grouped -> t list -> t
       let test = Test.make_grouped ~name:"fibonacci" [ f0; f1; ] ;;
     ]}
 
-    This kind of test is helpful to compare results between many implementations. *)
+    This kind of test is helpful to compare results between many
+    implementations. *)
 
 val name : t -> string
 (** [name t] returns the name of the test. *)

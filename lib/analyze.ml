@@ -335,8 +335,7 @@ let one : type a. a t -> Measure.witness -> Benchmark.t -> a =
   | RANSAC { filter_outliers; predictor } ->
       RANSAC.ransac ~filter_outliers ~predictor ~responder:label m
 
-let all :
-    type a.
+let all : type a.
        a t
     -> Measure.witness
     -> (string, Benchmark.t) Hashtbl.t
@@ -346,8 +345,7 @@ let all :
   Hashtbl.iter (fun name m -> Hashtbl.add ret name (one kind e m)) ms;
   ret
 
-let merge :
-    type a.
+let merge : type a.
        a t
     -> Measure.witness list
     -> (string, a) Hashtbl.t list
