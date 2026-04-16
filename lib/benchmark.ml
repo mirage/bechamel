@@ -31,8 +31,8 @@ let stabilize_garbage_collector () =
   let rec go fail last_heap_live_words =
     if fail <= 0 then
       failwith "Unable to stabilize the number of live words in the major heap";
-    Gc.compact ();
-    let stat = Gc.stat () in
+    Gc.full_major ();
+    let stat = Gc.quick_stat () in
     if stat.Gc.live_words <> last_heap_live_words then
       go (fail - 1) stat.Gc.live_words
   in
