@@ -20,10 +20,9 @@ let () =
           match system with
           | "linux" | "elf" -> `Linux
           | "win32" | "win64" | "mingw64" | "mingw" | "cygwin" -> `Windows
-          | "freebsd" -> `FreeBSD
+          | "freebsd" | "openbsd" | "netbsd" | "dragonfly" -> `BSD
           | "macosx" -> `MacOSX
-          | "beos" | "dragonfly" | "bsd" | "openbsd" | "netbsd" | "gnu"
-          | "solaris" | "unknown" ->
+          | "beos" | "bsd" | "gnu" | "solaris" | "unknown" ->
               invalid_arg "Unsupported system: %s" system
           | v ->
               if String.sub system 0 5 = "linux" then `Linux
@@ -42,7 +41,7 @@ let () =
   in
   let ml, c =
     match system with
-    | `Linux | `FreeBSD ->
+    | `Linux | `BSD ->
         (load_file "clock_linux.ml", load_file "clock_linux_stubs.c")
     | `Windows ->
         (load_file "clock_windows.ml", load_file "clock_windows_stubs.c")
