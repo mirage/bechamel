@@ -1,5 +1,11 @@
 open Bechamel
 
+let err_msg_to_invalid_arg = function
+  | Ok v -> v
+  | Error (`Msg m) -> invalid_arg m
+
+let ( let* ) = Result.bind
+
 type t =
   { x_label : string
   ; y_label : string
@@ -43,7 +49,7 @@ let witness ~compare : t Json_encoding.encoding =
 
 let of_ols_results ~x_label ~y_label ols_results raws =
   if not (Hashtbl.mem ols_results y_label) then
-    Rresult.R.error_msgf "y:%s does not exist in OLS results" y_label
+    Point.err_msgf "y:%s does not exist in OLS results" y_label
   else
     let results = Hashtbl.find ols_results y_label in
     let series = Hashtbl.create (Hashtbl.length results) in
@@ -51,23 +57,22 @@ let of_ols_results ~x_label ~y_label ols_results raws =
     try
       Hashtbl.iter
         (fun serie ols ->
-          let open Rresult.R in
           let Benchmark.{ stats; lr = raws; kde = raws_kde } =
             Hashtbl.find raws serie
           in
           let res =
-            Dataset.of_measurement_raws ~x_label ~y_label raws >>= fun raws ->
-            KDE.of_kde_raws ~label:y_label raws_kde >>= fun raws_kde ->
-            OLS.of_ols_result ~x_label ~y_label ols >>| fun ols ->
-            (stats, raws, raws_kde, ols)
+            let* raws = Dataset.of_measurement_raws ~x_label ~y_label raws in
+            let* raws_kde = KDE.of_kde_raws ~label:y_label raws_kde in
+            let* ols = OLS.of_ols_result ~x_label ~y_label ols in
+            Ok (stats, raws, raws_kde, ols)
           in
           match res with
           | Ok (stats, raws, raws_kde, ols) ->
               Hashtbl.add series serie (stats, raws, raws_kde, ols)
-          | Error _ as err -> Rresult.R.error_msg_to_invalid_arg err)
+          | Error _ as err -> err_msg_to_invalid_arg err)
         results;
       Ok { x_label; y_label; series }
-    with Invalid_argument err -> Rresult.R.error_msg err
+    with Invalid_argument err -> Error (`Msg err)
 
 type value = [ `Null | `Bool of bool | `String of string | `Float of float ]
 
@@ -179,7 +184,6 @@ let emit : type a.
     go dst a
   in
 
-  let open Rresult.R in
-  of_ols_results ~x_label ~y_label ols_results raw_results
-  >>| Json_encoding.construct (witness ~compare:compare_label)
-  >>= go
+  let* a = of_ols_results ~x_label ~y_label ols_results raw_results in
+  let a = Json_encoding.construct (witness ~compare:compare_label) a in
+  go a
