@@ -25,7 +25,7 @@ module Make (Functor : S.FUNCTOR) = struct
       let instance = X.instance in
       Hashtbl.add handlers
         (Stdlib.Obj.Extension_constructor.id [%extension_constructor T]
-         [@warning "-3"])
+         [@alert "-deprecated"])
         (function T x -> V (x, instance) | _ -> raise Not_found)
   end
 
@@ -37,12 +37,12 @@ module Make (Functor : S.FUNCTOR) = struct
     end))
 
   let rec iter t lst =
-    let[@warning "-8"] (f :: r) = lst in
+    let[@warning "-partial-match"] (f :: r) = lst in
     try f t with _ -> (iter [@tailcall]) t r
 
   let prj (t : t) =
     let uid =
-      Stdlib.Obj.Extension_constructor.((id (of_val t) [@warning "-3"]))
+      Stdlib.Obj.Extension_constructor.((id (of_val t) [@alert "-deprecated"]))
     in
     iter t (Hashtbl.find_all handlers uid)
 end

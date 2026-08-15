@@ -13,7 +13,7 @@ let all_released kind =
       ~free:(fun () -> decr global)
       (Staged.stage (Fun.const ()))
   in
-  let[@warning "-8"] [ test ] = Test.elements test in
+  let[@warning "-partial-match"] [ test ] = Test.elements test in
   let cfg = Benchmark.cfg ~limit:10 ~kde:None () in
   let _ = Benchmark.run cfg Instance.[ monotonic_clock ] test in
   Alcotest.(check int) "all released" !global 0;
@@ -31,7 +31,7 @@ let with_kde kind =
       ~free:(fun () -> decr global)
       (Staged.stage (Fun.const ()))
   in
-  let[@warning "-8"] [ test ] = Test.elements test in
+  let[@warning "-partial-match"] [ test ] = Test.elements test in
   let cfg = Benchmark.cfg ~limit:10 ~kde:(Some 1000) () in
   let _ = Benchmark.run cfg Instance.[ monotonic_clock ] test in
   Alcotest.(check int) "with kde" !global 0;
@@ -51,7 +51,7 @@ let uniq_resources kind =
       ~free:(Hashtbl.remove tbl)
       (Staged.stage (Fun.const ()))
   in
-  let[@warning "-8"] [ test ] = Test.elements test in
+  let[@warning "-partial-match"] [ test ] = Test.elements test in
   let cfg = Benchmark.cfg ~limit:10 ~kde:(Some 1000) () in
   let _ = Benchmark.run cfg Instance.[ monotonic_clock ] test in
   Alcotest.(check int) "uniq resources" (Hashtbl.length tbl) 0
@@ -73,7 +73,7 @@ let double_free kind =
         | Some () -> Hashtbl.remove tbl value)
       (Staged.stage (Fun.const ()))
   in
-  let[@warning "-8"] [ test ] = Test.elements test in
+  let[@warning "-partial-match"] [ test ] = Test.elements test in
   let cfg = Benchmark.cfg ~limit:10 ~kde:(Some 1000) () in
   let _ = Benchmark.run cfg Instance.[ monotonic_clock ] test in
   Alcotest.(check int) "double free" (Hashtbl.length tbl) 0

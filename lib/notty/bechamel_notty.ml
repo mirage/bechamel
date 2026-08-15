@@ -271,7 +271,8 @@ module One = struct
 end
 
 module Multiple = struct
-  [@@@warning "-26-27"]
+  [@@@warning "-unused-var"]
+  [@@@warning "-unused-var-strict"]
 
   let image_of_header ~rect (results : 'a results) =
     let instances = Hashtbl.fold (fun k _ a -> k :: a) results [] in
