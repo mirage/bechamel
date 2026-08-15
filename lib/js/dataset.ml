@@ -20,8 +20,7 @@ let of_measurement_raws ~x_label ~y_label raws =
   in
 
   if (not has_x_label) || not has_y_label then
-    Rresult.R.error_msgf "x:%s or y:%s does not exist in dataset." x_label
-      y_label
+    Point.err_msgf "x:%s or y:%s does not exist in dataset." x_label y_label
   else
     let to_point t =
       let x = Measurement_raw.get ~label:x_label t in

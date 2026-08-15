@@ -26,12 +26,11 @@ let of_ols_result ~x_label ~y_label ols =
   in
 
   if (not has_y_label) || not has_x_label then
-    Rresult.R.error_msgf "x:%s or y:%s does not exist in result: @[<hov>%a@]"
-      x_label y_label Analyze.OLS.pp ols
+    Point.err_msgf "x:%s or y:%s does not exist in result: @[<hov>%a@]" x_label
+      y_label Analyze.OLS.pp ols
   else
     match Analyze.OLS.estimates ols with
-    | None ->
-        Rresult.R.error_msgf "Result is errored: @[<hov>%a@]" Analyze.OLS.pp ols
+    | None -> Point.err_msgf "Result is errored: @[<hov>%a@]" Analyze.OLS.pp ols
     | Some estimates ->
         let predictors = Analyze.OLS.predictors ols in
         let estimate =
