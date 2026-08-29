@@ -78,6 +78,30 @@ let double_free kind =
   let _ = Benchmark.run cfg Instance.[ monotonic_clock ] test in
   Alcotest.(check int) "double free" (Hashtbl.length tbl) 0
 
+let every_resource_is_used =
+  Alcotest.test_case "every resource is used" `Quick @@ fun () ->
+  let seen = Hashtbl.create 0x100 in
+  let idx = ref 0 in
+  let test =
+    Test.make_with_resource ~name:"test" Test.multiple
+      ~allocate:(fun () ->
+        let value = !idx in
+        incr idx;
+        value)
+      ~free:ignore
+      (Staged.stage (fun value -> Hashtbl.replace seen value ()))
+  in
+  let[@warning "-partial-match"] [ test ] = Test.elements test in
+  let cfg =
+    Benchmark.cfg ~limit:10 ~kde:None ~start:8 ~sampling:(`Linear 0) ()
+  in
+  let _ = Benchmark.run cfg Instance.[ monotonic_clock ] test in
+  (* [Benchmark.run] allocates one extra resource which it never runs. *)
+  let allocated = !idx - 1 and used = Hashtbl.length seen in
+  if used < allocated then
+    Alcotest.failf "%d resources allocated but only %d of them were used"
+      allocated used
+
 let () =
   Alcotest.run "allocate"
     [ ( "uniq"
@@ -91,5 +115,6 @@ let () =
         ; with_kde Test.multiple
         ; uniq_resources Test.multiple
         ; double_free Test.multiple
+        ; every_resource_is_used
         ] )
     ]
