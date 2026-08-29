@@ -3,8 +3,8 @@ open Unsafe
 let always x _ = x
 
 let runnable_with_resources f vs i =
-  for _ = 1 to i do
-    ignore (Sys.opaque_identity (f (unsafe_array_get vs (i - 1))))
+  for k = 1 to i do
+    ignore (Sys.opaque_identity (f (unsafe_array_get vs (k - 1))))
   done
 [@@inline]
 
