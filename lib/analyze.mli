@@ -102,3 +102,40 @@ val merge :
 (** [merge witnesses tbls] returns a dictionary where the key is the {i label}
     of a measure (from the given [witnesses]) and the value is the result of
     this specific measure. *)
+
+val ols_to_table :
+     instances:Measure.witness list
+  -> bootstrap:int
+  -> r_square:bool
+  -> predictors:string array
+  -> (string * Benchmark.t) list
+  -> string list * (string * float list) list
+(** Analyze the test results using OLS and return the result in a tablular
+    format. Example usage:
+
+    {@ocaml[
+    let tests = [ (* Test.make ... *) ]
+    let instances = Instance.[ monotonic_clock; minor_allocated; promoted ]
+    let predictors = [| Measure.run |]
+
+    let benchmark () =
+      let cfg = Benchmark.cfg ~quota:(Time.second 0.33) () in
+      List.map
+        (fun t -> (Test.Elt.name t, Benchmark.run cfg instances t))
+        (Test.expand tests)
+
+    let output_csv (header, rows) =
+      let rows =
+        List.map
+          (fun (test_name, data) -> test_name :: List.map string_of_float data)
+          rows
+      in
+      let outf = "results.csv" in
+      Csv.save outf (("Test name" :: header) :: rows);
+      Printf.eprintf "Output saved to %S.\n%!" outf
+
+    let () =
+      benchmark ()
+      |> analyze_to_table ~instances ~bootstrap:0 ~r_square:false ~predictors
+      |> output_csv
+    ]} *)
